@@ -8,10 +8,11 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -22,11 +23,11 @@ import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.LegendRenderer;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
-import com.jjoe64.graphview.series.Series;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
 
@@ -55,12 +56,18 @@ public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver clientCountReceiver, updateProductReceiver;
 
 
-    private Handler handler = new Handler();
+
     private GraphView graph;
     //private ArrayList<LineGraphSeries<DataPoint>> seriesArray;
+    //map with fields product name : graph series
+    private HashMap<String, LineGraphSeries<DataPoint>> seriesMap;
     private int lastX = 0;
 
     private Spinner spinner;
+    private ArrayAdapter<String> adapter;
+
+    //utils
+    private Random rnd;
 
 
     @Override
@@ -74,9 +81,49 @@ public class MainActivity extends AppCompatActivity {
         //UI
         clientCountView = findViewById(R.id.client_count_view);
         productsView = findViewById(R.id.products_view);
+        spinner = findViewById(R.id.spinner);
 
+        rnd = new Random();
 
         createGraph();
+        initSpinner();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    private void initSpinner() {
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        //adapter.add(getString(R.string.all_products));
+
+        spinner.setAdapter(adapter);
+
+
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String name = (String) parent.getItemAtPosition(position);
+                graph.removeAllSeries();
+                /*if (name.equals(getString(R.string.all_products))){
+                    for (LineGraphSeries<DataPoint> series : seriesMap.values()) {
+                        graph.addSeries(series);
+                    }
+                }
+                else {
+                    graph.addSeries(seriesMap.get(name));
+                }*/
+                if (seriesMap.containsKey(name))
+                    graph.addSeries(seriesMap.get(name));
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
     }
 
     private void createGraph() {
@@ -96,6 +143,8 @@ public class MainActivity extends AppCompatActivity {
         graph.getLegendRenderer().setAlign(LegendRenderer.LegendAlign.TOP);
         graph.getLegendRenderer().setWidth(250);
         graph.getLegendRenderer().setBackgroundColor(Color.TRANSPARENT);
+
+        seriesMap = new HashMap<>();
     }
 
 
@@ -124,31 +173,27 @@ public class MainActivity extends AppCompatActivity {
                         JSONObject products = new JSONObject(intent.getStringExtra("products"));
 
                         Iterator<String> iterator = products.keys();
-                        while (iterator.hasNext()){
+                        while (iterator.hasNext()) {
                             String product = iterator.next();
-                            productsView.append(product + " : " + products.get(product) + "\n");
-                        }
 
-                        //add new series
-                        Random rnd = new Random();
-                        while (graph.getSeries().size() < products.length()){
-                            LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
-                            series.setColor(Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256)));
-                            graph.addSeries(series);
-                        }
+                            if (!seriesMap.containsKey(product)){
+                                //add new series
+                                LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
+                                series.setColor(Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256)));
+                                series.setTitle(product);
+                                seriesMap.put(product, series);
 
-                        //append new data to all series's
-                        iterator = products.keys();
-
-                        for (Series series : graph.getSeries()){
-                            if (iterator.hasNext()) {
-                                String product = iterator.next();
-                                DataPoint newPoint = new DataPoint(lastX, products.getInt(product));
-                                ((LineGraphSeries<DataPoint>) series).appendData(newPoint, true, 20);
-                                ((LineGraphSeries<DataPoint>) series).setTitle(product);
-                                lastX++;
+                                //update adapter
+                                adapter.add(product);
                             }
 
+                            //update series
+                            DataPoint newPoint = new DataPoint(lastX, products.getInt(product));
+                            seriesMap.get(product).appendData(newPoint, true, 20);
+                            lastX++;
+
+                            //update products view
+                            productsView.append(product + " : " + products.get(product) + "\n");
                         }
 
 
@@ -162,6 +207,22 @@ public class MainActivity extends AppCompatActivity {
         };
         registerReceiver(updateProductReceiver, filter);
     }
+
+    /*private void updateSeries(JSONObject products) throws JSONException {
+        //append new data to all series's
+        Iterator<String> iterator = products.keys();
+
+        for (Series series : graph.getSeries()) {
+            if (iterator.hasNext()) {
+                String product = iterator.next();
+                DataPoint newPoint = new DataPoint(lastX, products.getInt(product));
+                ((LineGraphSeries<DataPoint>) series).appendData(newPoint, true, 20);
+                ((LineGraphSeries<DataPoint>) series).setTitle(product);
+                lastX++;
+            }
+
+        }
+    }*/
 
     public void onNewClient(View view) {
         new Thread(new Client()).start();
@@ -190,9 +251,10 @@ public class MainActivity extends AppCompatActivity {
     public void onStartService(View view) {
         Intent intent = new Intent(this, StockService.class);
         startService(intent);
-        //bindService(intent, serviceConnection, BIND_AUTO_CREATE);
         findViewById(R.id.start_service_btn).setEnabled(false);
         findViewById(R.id.stop_service_btn).setEnabled(true);
+        spinner.setVisibility(View.VISIBLE);
+
     }
 
     public void onStopService(View view) {
