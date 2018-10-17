@@ -76,7 +76,6 @@ public class StockService extends Service {
                 try {
                     serverSocket.close();
                     clientsExecutor.shutdownNow();
-                    ServerTrading.sendBroadcastUpdateProducts(getApplicationContext());
                     Log.i(TAG, "run: Shutting down server thread");
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -98,13 +97,13 @@ public class StockService extends Service {
         ClientHandler(Socket socket){
             this.socket = socket;
             clientCount++;
-            updateClientCount();
+            sendBroadcastClientCount();
         }
 
         /**
          * Sends broadcast with new number of clients
          */
-        private void updateClientCount() {
+        void sendBroadcastClientCount() {
             Intent local = new Intent();
 
             local.setAction(getString(R.string.client_count_action));
@@ -129,13 +128,13 @@ public class StockService extends Service {
 
             } finally {
                 try {
+                    clientCount--;
                     socket.close();
+                    sendBroadcastClientCount();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
-            clientCount--;
-            updateClientCount();
         }
     }
 

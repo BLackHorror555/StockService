@@ -9,15 +9,22 @@ import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.example.dmitron.stockservice.client.Client;
 import com.example.dmitron.stockservice.R;
+import com.example.dmitron.stockservice.client.Client;
 import com.example.dmitron.stockservice.server.StockService;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.LegendRenderer;
@@ -66,6 +73,8 @@ public class MainActivity extends AppCompatActivity {
     private Spinner spinner;
     private ArrayAdapter<String> adapter;
 
+    private DrawerLayout drawerLayout;
+
     //utils
     private Random rnd;
 
@@ -75,6 +84,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        initToolbar();
+        initNavDrawer();
+
         setClientCountReceiver();
         setProductUpdateReceiver();
 
@@ -83,10 +95,54 @@ public class MainActivity extends AppCompatActivity {
         productsView = findViewById(R.id.products_view);
         spinner = findViewById(R.id.spinner);
 
+
         rnd = new Random();
 
         createGraph();
         initSpinner();
+    }
+
+    private void initNavDrawer() {
+        drawerLayout = findViewById(R.id.drawer_layout);
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
+                //menuItem.setChecked(true);
+                drawerLayout.closeDrawers();
+
+                switch (menuItem.getItemId()){
+                    case R.id.server_managing:
+                        Toast.makeText(getApplicationContext(), "Здеся", Toast.LENGTH_SHORT).show();
+                        break;
+                    case R.id.clients_monitoring:
+                        Toast.makeText(getApplicationContext(), "Не робит", Toast.LENGTH_SHORT).show();
+                        //startActivity(new Intent(getApplicationContext(), ClientMonitoringActivity.class));
+                        break;
+                }
+
+                return true;
+            }
+        });
+    }
+
+    private void initToolbar() {
+        android.support.v7.widget.Toolbar toolbar =  findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        ActionBar actionBar = getSupportActionBar();
+        actionBar.setDisplayHomeAsUpEnabled(true);
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            case android.R.id.home:
+                drawerLayout.openDrawer(GravityCompat.START);
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+
     }
 
     @Override
