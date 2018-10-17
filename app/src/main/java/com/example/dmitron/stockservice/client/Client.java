@@ -1,4 +1,4 @@
-package com.example.dmitron.stockservice.Client;
+package com.example.dmitron.stockservice.client;
 
 import android.util.Log;
 

@@ -12,6 +12,8 @@ import com.example.dmitron.stockservice.R;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class StockService extends Service {
 
@@ -45,7 +47,7 @@ public class StockService extends Service {
      */
     private class SocketServerThread implements Runnable{
 
-        //private ExecutorService executorService;
+        private ThreadPoolExecutor clientsExecutor;
 
         @Override
         public void run() {
@@ -56,15 +58,15 @@ public class StockService extends Service {
 
                 ServerTrading.sendBroadcastUpdateProducts(getApplicationContext());
 
-                //executorService = Executors.newFixedThreadPool(MAX_CLIENT_COUNT);
+                clientsExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
 
                 while (isListening){
                     Log.i(TAG, "Waiting for a client...");
                     Socket socket = serverSocket.accept();
                     Log.i(TAG, "Connection accepted");
 
-                    (new Thread(new ClientHandler(socket))).start();
-                    //executorService.submit(new ClientHandler(socket));
+                    //(new Thread(new ClientHandler(socket))).start();
+                    clientsExecutor.submit(new ClientHandler(socket));
                 }
 
             } catch (IOException e) {
@@ -73,7 +75,8 @@ public class StockService extends Service {
             finally {
                 try {
                     serverSocket.close();
-                    //executorService.shutdownNow();
+                    clientsExecutor.shutdownNow();
+                    ServerTrading.sendBroadcastUpdateProducts(getApplicationContext());
                     Log.i(TAG, "run: Shutting down server thread");
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -115,7 +118,6 @@ public class StockService extends Service {
             Log.i(TAG, "New client communicate with server!");
             try {
 
-                // TODO:10/9/18 Communication with client
                 ServerTrading serverTrading = new ServerTrading(socket, getApplicationContext());
                 serverTrading.initStreams();
 

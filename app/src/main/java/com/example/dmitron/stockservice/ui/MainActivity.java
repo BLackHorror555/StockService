@@ -16,7 +16,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import com.example.dmitron.stockservice.Client.Client;
+import com.example.dmitron.stockservice.client.Client;
 import com.example.dmitron.stockservice.R;
 import com.example.dmitron.stockservice.server.StockService;
 import com.jjoe64.graphview.GraphView;
@@ -133,6 +133,11 @@ public class MainActivity extends AppCompatActivity {
         graph.getViewport().setMinX(0);
         graph.getViewport().setMaxX(40);
         graph.getViewport().setMinY(0);
+
+        graph.getViewport().setScalable(true);
+        graph.getViewport().setScrollable(true);
+        graph.getViewport().setScalableY(true);
+        graph.getViewport().setScrollableY(true);
 
         graph.getGridLabelRenderer().setHorizontalLabelsVisible(false);
 
@@ -253,6 +258,7 @@ public class MainActivity extends AppCompatActivity {
         startService(intent);
         findViewById(R.id.start_service_btn).setEnabled(false);
         findViewById(R.id.stop_service_btn).setEnabled(true);
+        findViewById(R.id.new_client_btn).setEnabled(true);
         spinner.setVisibility(View.VISIBLE);
 
     }
@@ -262,6 +268,7 @@ public class MainActivity extends AppCompatActivity {
 
         findViewById(R.id.start_service_btn).setEnabled(true);
         findViewById(R.id.stop_service_btn).setEnabled(false);
+        findViewById(R.id.new_client_btn).setEnabled(false);
     }
 
     @Override

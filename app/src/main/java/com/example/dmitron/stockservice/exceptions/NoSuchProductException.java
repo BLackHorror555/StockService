@@ -1,4 +1,4 @@
-package com.example.dmitron.stockservice.Exceptions;
+package com.example.dmitron.stockservice.exceptions;
 
 public class NoSuchProductException extends Exception {
     private String description;
