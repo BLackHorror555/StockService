@@ -8,6 +8,8 @@ import java.util.Map;
 
 public class Trader {
 
+    private final int ID;
+    private static int lastID = 0;
     private static final int DEFAULT_MONEY = 500;
     private int money;
 
@@ -17,11 +19,15 @@ public class Trader {
     private Map<ProductType, Integer> products;
 
     Trader(){
+        ID = lastID++;
         money = DEFAULT_MONEY;
         products = new EnumMap<>(ProductType.class);
         products.put(ProductType.ORANGE, 1);
     }
 
+    public int getID(){
+        return ID;
+    }
 
 
     public void addProduct(ProductType productType){

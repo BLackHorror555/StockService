@@ -1,7 +1,10 @@
 package com.example.dmitron.stockservice.client;
 
+import android.content.Intent;
 import android.util.Log;
 
+import com.example.dmitron.stockservice.MyApplication;
+import com.example.dmitron.stockservice.R;
 import com.example.dmitron.stockservice.server.RequestType;
 import com.example.dmitron.stockservice.stock.ProductType;
 
@@ -50,7 +53,7 @@ public class ClientTrading {
     }
 
 
-    public void initStreams() throws IOException {
+    void initStreams() throws IOException {
         if (socket != null) {
             in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
             out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
@@ -66,47 +69,51 @@ public class ClientTrading {
      */
     public void startBotTrading(int dealsCount) throws InterruptedException {
 
+        try {
+            for (int i = 0; i < dealsCount; i++) {
 
-        for (int i = 0; i < dealsCount; i++) {
+                updateProductsFromServer();
 
-            updateProductsFromServer();
-
-            ProductType cheapestProduct = null;
-            //profit on buying
-            for (Map.Entry<ProductType, Integer> entry : products.entrySet()) {
-
-                if (cheapestProduct == null || entry.getValue() < products.get(cheapestProduct)) {
-                    cheapestProduct = entry.getKey();
-                }
-
-            }
-
-            //buy cheapest good if has money
-            if (trader.getMoney() >= products.get(cheapestProduct) && i < 7) {
-                buyProduct(cheapestProduct);
-                Log.i(TAG, "startBotTrading: Bot buy product; remaining money - " + trader.getMoney());
-            }
-            //else sell the most expensive
-            else {
-                ProductType expensiveProduct = null;
+                ProductType cheapestProduct = null;
                 //profit on buying
-                for (Map.Entry<ProductType, Integer> entry : trader.getProducts().entrySet()) {
+                for (Map.Entry<ProductType, Integer> entry : products.entrySet()) {
 
-                    if (expensiveProduct == null || products.get(entry.getKey()) > products.get(expensiveProduct)) {
-                        expensiveProduct = entry.getKey();
+                    if (cheapestProduct == null || entry.getValue() < products.get(cheapestProduct)) {
+                        cheapestProduct = entry.getKey();
                     }
 
                 }
-                sellProduct(expensiveProduct);
-                Log.i(TAG, "startBotTrading: Bot sell product for " + products.get(expensiveProduct)
-                        + ". Money: " + trader.getMoney());
+
+                //buy cheapest good if has money
+                if (trader.getMoney() >= products.get(cheapestProduct) && i < 7) {
+                    buyProduct(cheapestProduct);
+                    Log.i(TAG, "startBotTrading: Bot buy product; remaining money - " + trader.getMoney());
+                }
+                //else sell the most expensive
+                else {
+                    ProductType expensiveProduct = null;
+                    //profit on buying
+                    for (Map.Entry<ProductType, Integer> entry : trader.getProducts().entrySet()) {
+
+                        if (expensiveProduct == null || products.get(entry.getKey()) > products.get(expensiveProduct)) {
+                            expensiveProduct = entry.getKey();
+                        }
+
+                    }
+                    sellProduct(expensiveProduct);
+                    Log.i(TAG, "startBotTrading: Bot sell product for " + products.get(expensiveProduct)
+                            + ". Money: " + trader.getMoney());
+                }
+
+                sendBroadcastClientInfo(false);
+                Thread.sleep(TIME_BETWEEN_DEALS);
             }
-
-            Thread.sleep(TIME_BETWEEN_DEALS);
+            sendFinishConnection();
+            Log.i(TAG, "startBotTrading: Bot stop trading with money: " + trader.getMoney());
         }
-        sendFinishConnection();
-        Log.i(TAG, "startBotTrading: Bot stop trading with money: " + trader.getMoney());
-
+        finally {
+            sendBroadcastClientInfo(true);
+        }
 
     }
 
@@ -115,6 +122,39 @@ public class ClientTrading {
         buyProduct(ProductType.ORANGE);
         sellProduct(ProductType.ORANGE);
         sendFinishConnection();
+    }
+
+    /**
+     * send json with info about trader:
+     *  id - int
+     *  money - int
+     *  products - json[
+     *  product name - count
+     *        ...
+     *  ]
+     *
+     */
+    private void sendBroadcastClientInfo(boolean isCancel){
+        try {
+            Intent local = new Intent();
+            local.setAction(MyApplication.getAppContext().getString(R.string.client_info_action));
+
+            JSONObject jsonClient = new JSONObject()
+                    .put("id", Integer.toString(trader.getID()))
+                    .put("money", trader.getMoney())
+                    .put("isCancel", isCancel);
+
+            JSONObject jsonProducts = new JSONObject();
+            for (Map.Entry<ProductType, Integer> entry : trader.getProducts().entrySet()){
+                jsonProducts.put(entry.getKey().name(), entry.getValue());
+            }
+            jsonClient.put("products", jsonProducts);
+
+            local.putExtra("client", jsonClient.toString());
+            MyApplication.getAppContext().sendBroadcast(local);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
 
