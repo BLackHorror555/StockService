@@ -25,8 +25,8 @@ public class ClientManager {
         return clientManager;
     }
 
-    public void newBotClient(){
-        clients.execute(new Client(mainHandler));
+    public void newClientBot(){
+        clients.execute(new ClientBot(mainHandler));
     }
 
     public void newManagedClient(){

@@ -165,7 +165,7 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
 
         moneyGraph.getGridLabelRenderer().setHorizontalLabelsVisible(false);
 
-        moneyGraph.setTitle("Client money monitoring");
+        moneyGraph.setTitle("ClientBot money monitoring");
         moneyGraph.setTitleTextSize(50);
 
         moneyGraph.getLegendRenderer().setVisible(true);
@@ -182,7 +182,7 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.new_client_btn:
-                ClientManager.getInstance(handler).newBotClient();
+                ClientManager.getInstance(handler).newClientBot();
                 break;
         }
     }

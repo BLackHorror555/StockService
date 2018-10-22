@@ -24,13 +24,6 @@ public class ClientTrading {
 
     private static final String TAG = "ClientTrading";
 
-    /**
-     * time between deals of each treader in ms
-     */
-    private static final int TIME_BETWEEN_DEALS = 1000;
-
-    //for bot clientTrading; set to false to stop
-    private boolean isTrading;
     private Socket socket;
 
     private DataInputStream in;
@@ -41,97 +34,23 @@ public class ClientTrading {
     private android.os.Handler mainHandler;
 
 
-
-
-    /**
-     * Products on server received from last request
-     * Map - Product type : Price
-     */
-    private Map<ProductType, Integer> products;
-
-    private final Trader trader;
-
-    ClientTrading(Socket socket, android.os.Handler handler) {
+    ClientTrading(Socket socket, android.os.Handler handler) throws IOException {
         this.socket = socket;
-        trader = new Trader();
-        isTrading = true;
+        //trader = new Trader();
         mainHandler = handler;
+        in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+        out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
     }
 
 
     void initStreams() throws IOException {
         if (socket != null) {
-            in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-            out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+
         }
-    }
-
-
-    /**
-     * trading bot, buy and sell products depending on profit (stupid)
-     *
-     * @param dealsCount how many deals bot do
-     * @throws InterruptedException maybe throws when sleep between deals
-     */
-    public void startBotTrading(int dealsCount) throws InterruptedException {
-
-        try {
-            for (int i = 0; i < dealsCount; i++) {
-
-                getProductsFromServer();
-
-                ProductType cheapestProduct = null;
-                //profit on buying
-                for (Map.Entry<ProductType, Integer> entry : products.entrySet()) {
-
-                    if (cheapestProduct == null || entry.getValue() < products.get(cheapestProduct)) {
-                        cheapestProduct = entry.getKey();
-                    }
-
-                }
-
-                //buy cheapest good if has money
-                if (trader.getMoney() >= products.get(cheapestProduct) && i < 7) {
-                    buyProduct(cheapestProduct);
-                    Log.i(TAG, "startBotTrading: Bot buy product; remaining money - " + trader.getMoney());
-                }
-                //else sell the most expensive
-                else {
-                    ProductType expensiveProduct = null;
-                    //profit on buying
-                    for (Map.Entry<ProductType, Integer> entry : trader.getProducts().entrySet()) {
-
-                        if (expensiveProduct == null || products.get(entry.getKey()) > products.get(expensiveProduct)) {
-                            expensiveProduct = entry.getKey();
-                        }
-
-                    }
-                    sellProduct(expensiveProduct);
-                    Log.i(TAG, "startBotTrading: Bot sell product for " + products.get(expensiveProduct)
-                            + ". Money: " + trader.getMoney());
-                }
-
-                sendBroadcastClientInfo(false);
-                Thread.sleep(TIME_BETWEEN_DEALS);
-            }
-            sendFinishConnection();
-            Log.i(TAG, "startBotTrading: Bot stop trading with money: " + trader.getMoney());
-        }
-        finally {
-            sendBroadcastClientInfo(true);
-        }
-
-    }
-
-    public void test() {
-        getProductsFromServer();
-        buyProduct(ProductType.ORANGE);
-        sellProduct(ProductType.ORANGE);
-        sendFinishConnection();
     }
 
     /**
-     * send json with info about trader:
+     * send json with info about trader to main handler:
      *  id - int
      *  money - int
      *  products - json[
@@ -140,7 +59,7 @@ public class ClientTrading {
      *  ]
      *
      */
-    private void sendBroadcastClientInfo(boolean isCancel){
+    private void updateClientInfo(boolean isCancel, Trader trader){
         try {
             JSONObject jsonClient = new JSONObject()
                     .put("id", Integer.toString(trader.getID()))
@@ -164,13 +83,15 @@ public class ClientTrading {
 
 
     /**
-     * send to server message that client finished communication
+     * send to server and activity message that client finished communication
      */
-    private void sendFinishConnection() {
+    void finishConnection(Trader trader) {
         try {
             out.writeByte(RequestType.CLOSE_CONNECTION.ordinal());
             out.writeShort(0);
             out.flush();
+
+            updateClientInfo(true, trader);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -180,18 +101,18 @@ public class ClientTrading {
     /**
      * Update map products by request to server and receiving data
      */
-    public Map<ProductType, Integer> getProductsFromServer() {
+    Map<ProductType, Integer> getProductsFromServer() {
         try {
             out.writeByte(RequestType.PRODUCT_INFO.ordinal());
             //Log.i(TAG, "getProductsFromServer: sent " + RequestType.PRODUCT_INFO.ordinal() + "ordinal");
             out.writeShort(0);
             //Log.i(TAG, "getProductsFromServer: product request has been sent");
             out.flush();
-            this.products = receiveProductInfo();
+            //this.products = receiveProductInfo();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return products;
+        return receiveProductInfo();
     }
 
     private Map<ProductType, Integer> receiveProductInfo() {
@@ -232,22 +153,28 @@ public class ClientTrading {
     /**
      * send request for purchasing product and receive confirmation from server
      *
-     * @param productType product to by
+     * @param productType product to buy
+     * @return success
      */
-    public void buyProduct(ProductType productType) {
+    boolean buyProduct(Trader trader, ProductType productType) {
+        boolean success = false;
         try {
             out.writeByte(RequestType.BUYING.ordinal());
             out.writeShort(1);
             out.writeByte(productType.ordinal());
             out.flush();
-            if (receiveConfirmation()) {
-                trader.spendMoney(products.get(productType));
+            int spendMoney = receiveBuyingConfirm();
+            if (spendMoney != -1){
+                trader.spendMoney(spendMoney);
                 trader.addProduct(productType);
+                success = true;
+                updateClientInfo(false, trader);
             } else
                 Log.i(TAG, "buyProduct: refused to buy");
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
+        return success;
     }
 
 
@@ -256,35 +183,67 @@ public class ClientTrading {
      *
      * @param productType product for selling
      */
-    private void sellProduct(ProductType productType) {
+    boolean sellProduct(Trader trader, ProductType productType) {
         try {
+            if (!trader.isHasProduct(productType))
+                return false;
+
             out.writeByte(RequestType.SELLING.ordinal());
             out.writeShort(1);
             out.writeByte(productType.ordinal());
             out.flush();
-            if (receiveConfirmation()) {
-                trader.increaseMoney(products.get(productType));
-                trader.pickupProduct(productType);
-            } else
-                Log.i(TAG, "sellProduct: refused to sell");
+
+            int soldItemPrice = receiveSellingConfirmation();
+
+            trader.pickupProduct(productType);
+            trader.increaseMoney(soldItemPrice);
+
+            updateClientInfo(false, trader);
+
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
-
+        return true;
     }
 
 
     /**
      * Wait for server to confirm of operation
      *
-     * @return is confirm successful
+     * @return sold item price
      * @throws InterruptedException while wait for reading
      * @throws IOException          while checking available symbols
      */
-    private boolean receiveConfirmation() throws InterruptedException, IOException {
+    private int receiveSellingConfirmation() throws InterruptedException, IOException {
         while (in.available() < 1)
             Thread.sleep(50);
         RequestType requestType = RequestType.values()[in.readByte()];
-        return requestType == RequestType.OPERATION_ACCEPTED;
+
+        while (in.available() < 4)
+            Thread.sleep(50);
+
+        return in.readInt();
+    }
+
+
+    /**
+     * do purchase on server and return purchase price or -1 if buying prohibited
+     * @return
+     * @throws InterruptedException
+     * @throws IOException
+     */
+    private int receiveBuyingConfirm() throws InterruptedException, IOException {
+        int price = -1;
+        while (in.available() < 1)
+            Thread.sleep(50);
+        RequestType requestType = RequestType.values()[in.readByte()];
+
+        if (requestType == RequestType.OPERATION_ACCEPTED){
+            while (in.available() < 4)
+                Thread.sleep(50);
+            price = in.readInt();
+        }
+
+        return price;
     }
 }

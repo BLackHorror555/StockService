@@ -18,24 +18,31 @@ public class Trader {
      */
     private Map<ProductType, Integer> products;
 
-    Trader(){
+    public Trader(){
         ID = lastID++;
         money = DEFAULT_MONEY;
         products = new EnumMap<>(ProductType.class);
         products.put(ProductType.ORANGE, 1);
     }
 
-    public int getID(){
+    Trader(int money){
+        ID = lastID++;
+        this.money = money;
+        products = new EnumMap<>(ProductType.class);
+        products.put(ProductType.ORANGE, 1);
+    }
+
+    int getID(){
         return ID;
     }
 
 
-    public void addProduct(ProductType productType){
+    void addProduct(ProductType productType){
         int count = products.containsKey(productType) ? products.get(productType) : 0;
         products.put(productType, ++count);
     }
 
-    public boolean pickupProduct(ProductType productType){
+    boolean pickupProduct(ProductType productType){
         int count = products.containsKey(productType) ? products.get(productType) : 0;
         if (count == 0){
             return false;
@@ -46,12 +53,16 @@ public class Trader {
         }
     }
 
+    boolean isHasProduct(ProductType productType){
+        return products.containsKey(productType);
+    }
 
-    public void spendMoney(int money){
+
+    void spendMoney(int money){
         this.money -= money;
     }
 
-    public void increaseMoney(int money){
+    void increaseMoney(int money){
         this.money += money;
     }
 

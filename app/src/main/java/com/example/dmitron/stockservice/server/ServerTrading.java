@@ -109,7 +109,7 @@ public class ServerTrading {
                     sendSellingConfirm(sellingProduct);
                     break;
                 case CLOSE_CONNECTION:
-                    Log.i(TAG, "start: Client want to close connection");
+                    Log.i(TAG, "start: ClientBot want to close connection");
                     isRespond = false;
                     break;
             }
@@ -118,32 +118,38 @@ public class ServerTrading {
 
 
     /**
-     * check if certain product is available for sale and send it info to client
-     *
+     * check if certain product is available for sale and send it info to client in 1 byte
+     *  and send product price in 4 bytes
      * @param productType type of purchased product
      * @throws IOException write to stream exception
      */
     private void sendBuyingConfirm(ProductType productType) throws IOException {
-        if (sm.getStock().getProducts().containsKey(productType)) {
-            dataOut.writeByte(RequestType.OPERATION_ACCEPTED.ordinal());
-            sm.buyProduct(productType);
-            sendBroadcastUpdateProducts(context);
-        } else
+
+        int buyingResult = sm.buyProduct(productType);
+        if (buyingResult == -1)
             dataOut.writeByte(RequestType.OPERATION_PROHIBITED.ordinal());
-        dataOut.flush();
+        else {
+            sendBroadcastUpdateProducts(context);
+
+            dataOut.writeByte(RequestType.OPERATION_ACCEPTED.ordinal());
+            dataOut.writeInt(buyingResult);
+            dataOut.flush();
+        }
     }
 
     /**
-     * send to client selling confirmation if it is possible
+     * send to client selling confirmation and sold item price
      *
      * @param productType type of product need to confirm
      * @throws IOException write to socket
      */
     private void sendSellingConfirm(ProductType productType) throws IOException {
-        sm.sellProduct(productType);
-        dataOut.writeByte(RequestType.OPERATION_ACCEPTED.ordinal());
-        dataOut.flush();
+
+        int sellingPrice = sm.sellProduct(productType);
         sendBroadcastUpdateProducts(context);
+        dataOut.writeByte(RequestType.OPERATION_ACCEPTED.ordinal());
+        dataOut.writeInt(sellingPrice);
+        dataOut.flush();
     }
 
     /**

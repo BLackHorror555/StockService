@@ -23,14 +23,16 @@ public class StockManager {
      * increase price
      *
      * @param type Enum product type
-     * @return success
+     * @return -1 if failed
+     *          selling price if success
      */
-    public synchronized boolean buyProduct(ProductType type) {
-        boolean result;
+    public synchronized int buyProduct(ProductType type) {
+        int buyingPrice;
         Product buyingProduct = stock.products.get(type);
         if (!stock.products.containsKey(type))
-            result = false;
+            buyingPrice = -1;
         else {
+            buyingPrice = buyingProduct.getPrice();
             for (ProductType productType : ProductType.values()) {
                 if (productType == type){
                     buyingProduct.increaseInterest(2);
@@ -44,9 +46,8 @@ public class StockManager {
 
             }
 
-            result = true;
         }
-        return result;
+        return buyingPrice;
     }
 
     /**
@@ -55,9 +56,11 @@ public class StockManager {
      * decrease price
      *
      * @param type Enum product type
+     * @return price of sell item
      */
-    public synchronized void sellProduct(ProductType type) {
+    public synchronized int sellProduct(ProductType type) {
         Product buyingProduct = stock.products.get(type);
+        int sellingPrice = buyingProduct.getPrice();
         for (ProductType productType : ProductType.values()) {
             if (productType == type){
                 buyingProduct.decreaseInterest(2);
@@ -70,6 +73,7 @@ public class StockManager {
             }
 
         }
+        return sellingPrice;
 
     }
 
