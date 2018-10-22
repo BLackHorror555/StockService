@@ -1,11 +1,11 @@
 package com.example.dmitron.stockservice.ui;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -18,7 +18,6 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import com.example.dmitron.stockservice.MyApplication;
 import com.example.dmitron.stockservice.R;
 import com.example.dmitron.stockservice.client.ClientManager;
 import com.jjoe64.graphview.GraphView;
@@ -38,17 +37,53 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
     private HashMap<String, LineGraphSeries<DataPoint>> moneySeriesMap;
     private int lastX = 0;
 
-    private BroadcastReceiver clientInfoReceiver;
-
     //UI
     private Button newClientButton;
     private Spinner spinner;
     private ArrayAdapter<String> adapter;
     private TextView productsView;
 
+    private static Handler handler;
+
     //utils
     Random rnd;
 
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        initHandler();
+
+    }
+
+    private void initHandler() {
+        handler = new Handler(Looper.getMainLooper()){
+            @Override
+            public void handleMessage(Message msg) {
+                try {
+                    JSONObject jsonClient = (JSONObject) msg.obj;
+                    boolean isCancel = jsonClient.getBoolean("isCancel");
+                    String id = jsonClient.getString("id");
+
+                    //if isCancel - client is disconnected, remove it
+                    if (isCancel) {
+                        //if this series is showing in graph now, remove it from graph
+                        int pos = adapter.getPosition(id);
+                        adapter.remove("Trader " + id);
+                        adapter.insert("Trader " + id + " - disconnected", ++pos);
+                        return;
+                    }
+
+                    int money = jsonClient.getInt("money");
+                    updateMoneyGraph(id, money);
+
+                    JSONObject jsonProducts = jsonClient.getJSONObject("products");
+                    productsView.setText(jsonProducts.toString(1).replaceAll("[\"{}]", ""));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+    }
 
     @Nullable
     @Override
@@ -64,7 +99,6 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
 
         rnd = new Random();
 
-        setClientInfoReceiver();
         createGraphs();
         initSpinner();
         return v;
@@ -93,45 +127,6 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
         });
     }
 
-    private void setClientInfoReceiver() {
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(getString(R.string.client_info_action));
-
-        clientInfoReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (getString(R.string.client_info_action).equals(intent.getAction())){
-                    try {
-                        JSONObject jsonClient = new JSONObject(intent.getStringExtra("client"));
-
-                        boolean isCancel = jsonClient.getBoolean("isCancel");
-                        String id = jsonClient.getString("id");
-
-                        //if isCancel - client is disconnected, remove it
-                        if (isCancel){
-                            //if this series is showing in graph now, remove it from graph
-                            int pos = adapter.getPosition(id);
-                            adapter.remove("Trader " + id);
-                            adapter.insert("Trader " + id + " - disconnected", ++pos);
-                            return;
-                        }
-
-                        int money = jsonClient.getInt("money");
-                        updateMoneyGraph(id, money);
-
-                        JSONObject jsonProducts = jsonClient.getJSONObject("products");
-                        productsView.setText(jsonProducts.toString(1).replaceAll("[\"{}]", ""));
-
-
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        };
-        MyApplication.getAppContext().registerReceiver(clientInfoReceiver, filter);
-    }
-
 
     private void updateMoneyGraph(String id, int money) {
 
@@ -153,9 +148,8 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
 
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
-        MyApplication.getAppContext().unregisterReceiver(clientInfoReceiver);
+    public void onDetach() {
+        super.onDetach();
     }
 
     private void createGraphs() {
@@ -188,7 +182,7 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.new_client_btn:
-                ClientManager.getInstance().newClient();
+                ClientManager.getInstance(handler).newBotClient();
                 break;
         }
     }

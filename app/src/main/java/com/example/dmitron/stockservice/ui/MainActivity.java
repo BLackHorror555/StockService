@@ -18,6 +18,7 @@ public class MainActivity extends AppCompatActivity {
     private DrawerLayout drawerLayout;
     private ServerManagingFragment serverManagingFragment;
     private ClientMonitoringFragment clientMonitoringFragment;
+    private ManagedTraderFragment managedTraderFragment;
 
 
     @Override
@@ -35,11 +36,14 @@ public class MainActivity extends AppCompatActivity {
 
             serverManagingFragment = new ServerManagingFragment();
             clientMonitoringFragment = new ClientMonitoringFragment();
+            managedTraderFragment = new ManagedTraderFragment();
 
             getSupportFragmentManager().beginTransaction()
                     .add(R.id.fragment_container, serverManagingFragment)
                     .add(R.id.fragment_container, clientMonitoringFragment)
+                    .add(R.id.fragment_container, managedTraderFragment)
                     .hide(clientMonitoringFragment)
+                    .hide(managedTraderFragment)
                     .commit();
         }
     }
@@ -65,7 +69,9 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case R.id.clients_monitoring:
                         showFragment(clientMonitoringFragment);
-
+                        break;
+                    case R.id.managed_trader:
+                        showFragment(managedTraderFragment);
                         break;
                 }
 

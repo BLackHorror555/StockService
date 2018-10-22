@@ -1,10 +1,9 @@
 package com.example.dmitron.stockservice.client;
 
-import android.content.Intent;
+import android.content.Context;
+import android.os.Message;
 import android.util.Log;
 
-import com.example.dmitron.stockservice.MyApplication;
-import com.example.dmitron.stockservice.R;
 import com.example.dmitron.stockservice.server.RequestType;
 import com.example.dmitron.stockservice.stock.ProductType;
 
@@ -37,6 +36,12 @@ public class ClientTrading {
     private DataInputStream in;
     private DataOutputStream out;
 
+    private Context AppContext;
+
+    private android.os.Handler mainHandler;
+
+
+
 
     /**
      * Products on server received from last request
@@ -46,10 +51,11 @@ public class ClientTrading {
 
     private final Trader trader;
 
-    ClientTrading(Socket socket) {
+    ClientTrading(Socket socket, android.os.Handler handler) {
         this.socket = socket;
         trader = new Trader();
         isTrading = true;
+        mainHandler = handler;
     }
 
 
@@ -72,7 +78,7 @@ public class ClientTrading {
         try {
             for (int i = 0; i < dealsCount; i++) {
 
-                updateProductsFromServer();
+                getProductsFromServer();
 
                 ProductType cheapestProduct = null;
                 //profit on buying
@@ -118,7 +124,7 @@ public class ClientTrading {
     }
 
     public void test() {
-        updateProductsFromServer();
+        getProductsFromServer();
         buyProduct(ProductType.ORANGE);
         sellProduct(ProductType.ORANGE);
         sendFinishConnection();
@@ -136,9 +142,6 @@ public class ClientTrading {
      */
     private void sendBroadcastClientInfo(boolean isCancel){
         try {
-            Intent local = new Intent();
-            local.setAction(MyApplication.getAppContext().getString(R.string.client_info_action));
-
             JSONObject jsonClient = new JSONObject()
                     .put("id", Integer.toString(trader.getID()))
                     .put("money", trader.getMoney())
@@ -150,8 +153,10 @@ public class ClientTrading {
             }
             jsonClient.put("products", jsonProducts);
 
-            local.putExtra("client", jsonClient.toString());
-            MyApplication.getAppContext().sendBroadcast(local);
+            Message msg = mainHandler.obtainMessage();
+            msg.obj = jsonClient;
+            msg.sendToTarget();
+
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -175,12 +180,12 @@ public class ClientTrading {
     /**
      * Update map products by request to server and receiving data
      */
-    private Map<ProductType, Integer> updateProductsFromServer() {
+    public Map<ProductType, Integer> getProductsFromServer() {
         try {
             out.writeByte(RequestType.PRODUCT_INFO.ordinal());
-            //Log.i(TAG, "updateProductsFromServer: sent " + RequestType.PRODUCT_INFO.ordinal() + "ordinal");
+            //Log.i(TAG, "getProductsFromServer: sent " + RequestType.PRODUCT_INFO.ordinal() + "ordinal");
             out.writeShort(0);
-            //Log.i(TAG, "updateProductsFromServer: product request has been sent");
+            //Log.i(TAG, "getProductsFromServer: product request has been sent");
             out.flush();
             this.products = receiveProductInfo();
         } catch (IOException e) {
@@ -229,7 +234,7 @@ public class ClientTrading {
      *
      * @param productType product to by
      */
-    private void buyProduct(ProductType productType) {
+    public void buyProduct(ProductType productType) {
         try {
             out.writeByte(RequestType.BUYING.ordinal());
             out.writeShort(1);

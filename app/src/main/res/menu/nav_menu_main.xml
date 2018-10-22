@@ -8,4 +8,7 @@
         android:id="@+id/clients_monitoring"
 
         android:title="Client monitoring" />
+    <item
+        android:id="@+id/managed_trader"
+        android:title="I am trader!" />
 </menu>

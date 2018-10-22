@@ -56,14 +56,17 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
 
 
     @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        setClientCountReceiver(context);
+        setProductUpdateReceiver(context);
+    }
+
+    @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
-
-        setClientCountReceiver();
-        setProductUpdateReceiver();
-
-
         super.onCreate(savedInstanceState);
     }
+
 
     @Nullable
     @Override
@@ -157,7 +160,7 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
     /**
      * register receiver that get product updates from server
      */
-    private void setProductUpdateReceiver() {
+    private void setProductUpdateReceiver(Context context) {
         IntentFilter filter = new IntentFilter();
 
         filter.addAction(getString(R.string.update_products_receiver));
@@ -205,14 +208,14 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
                 }
             }
         };
-        getActivity().registerReceiver(updateProductReceiver, filter);
+        context.registerReceiver(updateProductReceiver, filter);
     }
 
 
     /**
      * Register receiver to receive intents with a new number of clients
      */
-    private void setClientCountReceiver() {
+    private void setClientCountReceiver(Context context) {
         IntentFilter filter = new IntentFilter();
 
         filter.addAction(getString(R.string.client_count_action));
@@ -225,7 +228,7 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
                     clientCountView.setText(intent.getStringExtra("client_count"));
             }
         };
-        getActivity().registerReceiver(clientCountReceiver, filter);
+        context.registerReceiver(clientCountReceiver, filter);
     }
 
     public void onStartService() {

@@ -1,5 +1,6 @@
 package com.example.dmitron.stockservice.client;
 
+import android.os.Handler;
 import android.util.Log;
 
 import java.io.IOException;
@@ -13,8 +14,10 @@ public class Client implements Runnable {
 
     private Socket socket;
     private ClientTrading clientTrading;
+    private Handler mainHandler;
 
-    public Client() {
+    public Client(Handler handler) {
+        mainHandler = handler;
     }
 
 
@@ -22,7 +25,7 @@ public class Client implements Runnable {
     public void run() {
         try {
             connectToServer();
-            clientTrading = new ClientTrading(socket);
+            clientTrading = new ClientTrading(socket, mainHandler);
             clientTrading.initStreams();
             clientTrading.startBotTrading(10);
 
