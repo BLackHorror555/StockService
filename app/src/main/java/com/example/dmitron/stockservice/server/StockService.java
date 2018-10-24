@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.example.dmitron.stockservice.R;
@@ -109,7 +110,7 @@ public class StockService extends Service {
             local.setAction(getString(R.string.client_count_action));
             local.putExtra("client_count", Integer.toString(clientCount));
 
-            sendBroadcast(local);
+            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(local);
         }
 
         @Override

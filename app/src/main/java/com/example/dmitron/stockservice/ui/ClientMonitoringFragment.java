@@ -5,7 +5,6 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -19,16 +18,17 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.example.dmitron.stockservice.R;
-import com.example.dmitron.stockservice.client.ClientManager;
+import com.example.dmitron.stockservice.client.ClientBot;
+import com.example.dmitron.stockservice.client.ClientBotManager;
+import com.example.dmitron.stockservice.client.Trader;
+import com.example.dmitron.stockservice.stock.ProductType;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.LegendRenderer;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 public class ClientMonitoringFragment extends Fragment implements View.OnClickListener {
@@ -43,7 +43,7 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
     private ArrayAdapter<String> adapter;
     private TextView productsView;
 
-    private static Handler handler;
+    //private static Handler handler;
 
     //utils
     Random rnd;
@@ -51,39 +51,47 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        initHandler();
 
     }
 
-    private void initHandler() {
-        handler = new Handler(Looper.getMainLooper()){
-            @Override
-            public void handleMessage(Message msg) {
-                try {
-                    JSONObject jsonClient = (JSONObject) msg.obj;
-                    boolean isCancel = jsonClient.getBoolean("isCancel");
-                    String id = jsonClient.getString("id");
+    /**
+     * receive callbacks when whatever client bot update
+     */
+    private ClientBot.TraderUpdateCallback traderUpdateCallback = new ClientBot.TraderUpdateCallback() {
 
-                    //if isCancel - client is disconnected, remove it
-                    if (isCancel) {
-                        //if this series is showing in graph now, remove it from graph
-                        int pos = adapter.getPosition(id);
-                        adapter.remove("Trader " + id);
-                        adapter.insert("Trader " + id + " - disconnected", ++pos);
-                        return;
+        Handler handler = new Handler(Looper.getMainLooper());
+        @Override
+        public void onTraderUpdate(final Trader trader) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    updateMoneyGraph(Integer.toString(trader.getID()), trader.getMoney());
+                    Map<ProductType, Integer> products = trader.getProducts();
+                    productsView.setText("");
+                    for (ProductType productType : products.keySet()){
+                        productsView.append(productType.name() + " - " + products.get(productType) + "\n");
                     }
-
-                    int money = jsonClient.getInt("money");
-                    updateMoneyGraph(id, money);
-
-                    JSONObject jsonProducts = jsonClient.getJSONObject("products");
-                    productsView.setText(jsonProducts.toString(1).replaceAll("[\"{}]", ""));
-                } catch (JSONException e) {
-                    e.printStackTrace();
                 }
-            }
-        };
-    }
+            });
+
+        }
+
+        @Override
+        public void onTradingFinish(final Trader trader) {
+
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    String id = Integer.toString(trader.getID());
+                    //int pos = adapter.getPosition("Trader " + id);
+                    adapter.remove("Trader " + id);
+                    adapter.insert("Trader " + id + " - disconnected", adapter.getCount());
+                }
+            });
+
+        }
+    };
+
 
     @Nullable
     @Override
@@ -128,6 +136,11 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
     }
 
 
+    /**
+     * put new data points with money into graph
+     * @param id
+     * @param money
+     */
     private void updateMoneyGraph(String id, int money) {
 
         //add client if he is not
@@ -182,7 +195,7 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.new_client_btn:
-                ClientManager.getInstance(handler).newClientBot();
+                ClientBotManager.getInstance().newClientBot(traderUpdateCallback);
                 break;
         }
     }

@@ -2,6 +2,7 @@ package com.example.dmitron.stockservice.server;
 
 import android.content.Context;
 import android.content.Intent;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.example.dmitron.stockservice.R;
@@ -48,10 +49,10 @@ public class ServerTrading {
             sm = StockManager.getInstance();
 
         Intent local = new Intent();
-        local.setAction(context.getString(R.string.update_products_receiver));
+        local.setAction(context.getString(R.string.update_products_action));
         local.putExtra("products", sm.createJson().toString());
 
-        context.sendBroadcast(local);
+        LocalBroadcastManager.getInstance(context).sendBroadcast(local);
     }
 
     public void initStreams() throws IOException {
@@ -170,7 +171,5 @@ public class ServerTrading {
         dataOut.writeBytes(jsonObject.toString());
 
         dataOut.flush();
-
-
     }
 }

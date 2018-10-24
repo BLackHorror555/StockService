@@ -1,33 +1,30 @@
 package com.example.dmitron.stockservice.client;
 
-import android.os.Handler;
 import android.util.Log;
 
 import com.example.dmitron.stockservice.stock.ProductType;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.util.Map;
 
-public class ClientBot implements Runnable {
+public class ClientBot extends Client implements Runnable{
 
-    private static final String TAG = "Client1";
-    private static final int SERVER_PORT = 1234;
-    private static final String ADDRESS = "localhost";
+    private static final String TAG = "ClientBot";
+
 
     /**
      * time between deals of each treader in ms
      */
     private static final int TIME_BETWEEN_DEALS = 1000;
 
-    private Socket socket;
+
     private ClientTrading clientTrading;
-    private Handler mainHandler;
+    private TraderUpdateCallback listener;
 
     private Trader trader;
 
-    public ClientBot(Handler handler) {
-        mainHandler = handler;
+    public ClientBot(TraderUpdateCallback listener) {
+        this.listener = listener;
         trader = new Trader();
     }
 
@@ -36,21 +33,34 @@ public class ClientBot implements Runnable {
     public void run() {
         try {
             connectToServer();
-            clientTrading = new ClientTrading(socket, mainHandler);
-            clientTrading.initStreams();
+            clientTrading = new ClientTrading(this);
+
             startBotTrading(10);
+
+            if (listener != null){
+                listener.onTradingFinish(trader);
+            }
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         } finally {
             try {
-                if (socket != null)
-                    socket.close();
+                closeConnection();
                 Log.i(TAG, "run: client socket closed");
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    public void setTraderUpdateListener(TraderUpdateCallback listener){
+        this.listener = listener;
+    }
+
+
+    private void notifyTraderUpdate(){
+        if (listener != null)
+            listener.onTraderUpdate(trader);
     }
 
 
@@ -81,6 +91,7 @@ public class ClientBot implements Runnable {
                 if (trader.getMoney() >= products.get(cheapestProduct) && i < 7) {
                     clientTrading.buyProduct(trader, cheapestProduct);
                     Log.i(TAG, "startBotTrading: Bot buy product; remaining money - " + trader.getMoney());
+                    notifyTraderUpdate();
                 }
                 //else sell the most expensive
                 else {
@@ -96,6 +107,7 @@ public class ClientBot implements Runnable {
                     clientTrading.sellProduct(trader, expensiveProduct);
                     Log.i(TAG, "startBotTrading: Bot sell product for " + products.get(expensiveProduct)
                             + ". Money: " + trader.getMoney());
+                    notifyTraderUpdate();
                 }
 
                 Thread.sleep(TIME_BETWEEN_DEALS);
@@ -103,17 +115,18 @@ public class ClientBot implements Runnable {
 
         }
         finally {
-            clientTrading.finishConnection(trader);
+            clientTrading.finishConnection();
             Log.i(TAG, "startBotTrading: Bot stop trading with money: " + trader.getMoney());
         }
 
     }
 
-
-
-    private void connectToServer() throws IOException {
-
-        socket = new Socket(ADDRESS, SERVER_PORT);
-        Log.i(TAG, "connectToServer: yes");
+    /**
+     * implement this to know about trader bots updates
+     */
+    public interface TraderUpdateCallback {
+        void onTraderUpdate(Trader trader);
+        void onTradingFinish(Trader trader);
     }
+
 }

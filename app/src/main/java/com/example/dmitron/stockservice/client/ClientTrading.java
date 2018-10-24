@@ -1,7 +1,5 @@
 package com.example.dmitron.stockservice.client;
 
-import android.content.Context;
-import android.os.Message;
 import android.util.Log;
 
 import com.example.dmitron.stockservice.server.RequestType;
@@ -20,7 +18,12 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
 
+
+/**
+ * provides api to do server requests
+ */
 public class ClientTrading {
+
 
     private static final String TAG = "ClientTrading";
 
@@ -29,69 +32,24 @@ public class ClientTrading {
     private DataInputStream in;
     private DataOutputStream out;
 
-    private Context AppContext;
-
-    private android.os.Handler mainHandler;
-
-
-    ClientTrading(Socket socket, android.os.Handler handler) throws IOException {
-        this.socket = socket;
+    public ClientTrading(Client client) throws IOException {
+        this.socket = client.socket;
         //trader = new Trader();
-        mainHandler = handler;
         in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
         out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
     }
 
 
-    void initStreams() throws IOException {
-        if (socket != null) {
-
-        }
-    }
-
-    /**
-     * send json with info about trader to main handler:
-     *  id - int
-     *  money - int
-     *  products - json[
-     *  product name - count
-     *        ...
-     *  ]
-     *
-     */
-    private void updateClientInfo(boolean isCancel, Trader trader){
-        try {
-            JSONObject jsonClient = new JSONObject()
-                    .put("id", Integer.toString(trader.getID()))
-                    .put("money", trader.getMoney())
-                    .put("isCancel", isCancel);
-
-            JSONObject jsonProducts = new JSONObject();
-            for (Map.Entry<ProductType, Integer> entry : trader.getProducts().entrySet()){
-                jsonProducts.put(entry.getKey().name(), entry.getValue());
-            }
-            jsonClient.put("products", jsonProducts);
-
-            Message msg = mainHandler.obtainMessage();
-            msg.obj = jsonClient;
-            msg.sendToTarget();
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
-
 
     /**
      * send to server and activity message that client finished communication
      */
-    void finishConnection(Trader trader) {
+    public void finishConnection() {
         try {
             out.writeByte(RequestType.CLOSE_CONNECTION.ordinal());
             out.writeShort(0);
             out.flush();
 
-            updateClientInfo(true, trader);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -101,14 +59,11 @@ public class ClientTrading {
     /**
      * Update map products by request to server and receiving data
      */
-    Map<ProductType, Integer> getProductsFromServer() {
+    public Map<ProductType, Integer> getProductsFromServer() {
         try {
             out.writeByte(RequestType.PRODUCT_INFO.ordinal());
-            //Log.i(TAG, "getProductsFromServer: sent " + RequestType.PRODUCT_INFO.ordinal() + "ordinal");
             out.writeShort(0);
-            //Log.i(TAG, "getProductsFromServer: product request has been sent");
             out.flush();
-            //this.products = receiveProductInfo();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -156,9 +111,12 @@ public class ClientTrading {
      * @param productType product to buy
      * @return success
      */
-    boolean buyProduct(Trader trader, ProductType productType) {
+    public boolean buyProduct(Trader trader, ProductType productType) {
         boolean success = false;
         try {
+            if (getProductsFromServer().get(productType) > trader.getMoney())
+                return false;
+
             out.writeByte(RequestType.BUYING.ordinal());
             out.writeShort(1);
             out.writeByte(productType.ordinal());
@@ -168,7 +126,6 @@ public class ClientTrading {
                 trader.spendMoney(spendMoney);
                 trader.addProduct(productType);
                 success = true;
-                updateClientInfo(false, trader);
             } else
                 Log.i(TAG, "buyProduct: refused to buy");
         } catch (IOException | InterruptedException e) {
@@ -183,7 +140,7 @@ public class ClientTrading {
      *
      * @param productType product for selling
      */
-    boolean sellProduct(Trader trader, ProductType productType) {
+    public boolean sellProduct(Trader trader, ProductType productType) {
         try {
             if (!trader.isHasProduct(productType))
                 return false;
@@ -197,8 +154,6 @@ public class ClientTrading {
 
             trader.pickupProduct(productType);
             trader.increaseMoney(soldItemPrice);
-
-            updateClientInfo(false, trader);
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
@@ -228,9 +183,9 @@ public class ClientTrading {
 
     /**
      * do purchase on server and return purchase price or -1 if buying prohibited
-     * @return
-     * @throws InterruptedException
-     * @throws IOException
+     * @return -1 if buying prohibited, otherwise price
+     * @throws InterruptedException while waiting for available in
+     * @throws IOException  error reading from input stream
      */
     private int receiveBuyingConfirm() throws InterruptedException, IOException {
         int price = -1;

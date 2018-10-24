@@ -32,7 +32,7 @@ public class Trader {
         products.put(ProductType.ORANGE, 1);
     }
 
-    int getID(){
+    public int getID(){
         return ID;
     }
 
@@ -54,7 +54,7 @@ public class Trader {
     }
 
     boolean isHasProduct(ProductType productType){
-        return products.containsKey(productType);
+        return products.containsKey(productType) && products.get(productType) > 0;
     }
 
 

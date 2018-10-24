@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">StockService</string>
     <string name="client_count_action">com.example.dmitron.stockservice.NEW_CLIENT_ACTION</string>
-    <string name="update_products_receiver">com.example.dmitron.stockservice.UPDATE_PRODUCTS_ACTION</string>
+    <string name="update_products_action">com.example.dmitron.stockservice.UPDATE_PRODUCTS_ACTION</string>
     <string name="client_info_action">com.example.dmitron.stockservice.CLIENT_INFO_ACTION</string>
     <string name="all_products">All products</string>
 </resources>
