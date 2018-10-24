@@ -12,7 +12,6 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -84,29 +83,22 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
         stockProductsAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1);
         stockProductsListView.setAdapter(stockProductsAdapter);
 
-        stockProductsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String productName = ((String) parent.getItemAtPosition(position)).split(",")[0];
-                ProductType productType = ProductType.valueOf(productName);
+        stockProductsListView.setOnItemClickListener((parent, view, position, id) -> {
 
-                managedTraderHelper.new BuyingTask(productType).execute();
+            String productName = ((String) parent.getItemAtPosition(position)).split(",")[0];
+            ProductType productType = ProductType.valueOf(productName);
 
-
-            }
+            managedTraderHelper.new BuyingTask(productType).execute();
         });
 
         traderProductsAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1);
         traderProductsListView.setAdapter(traderProductsAdapter);
 
-        traderProductsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String productName = ((String) parent.getItemAtPosition(position)).split(",")[0];
-                ProductType productType = ProductType.valueOf(productName);
+        traderProductsListView.setOnItemClickListener((parent, view, position, id) -> {
 
-                managedTraderHelper.new SellingTask(productType).execute();
-            }
+            String productName = ((String) parent.getItemAtPosition(position)).split(",")[0];
+            ProductType productType = ProductType.valueOf(productName);
+            managedTraderHelper.new SellingTask(productType).execute();
         });
     }
 
@@ -123,6 +115,7 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
 
         moneyView.setText(String.format(Locale.getDefault(), "%d", trader.getMoney()));
     }
+
 
     /**
      * receive info about products from server through broadcast (ugly hack in case of dividing client and server apps)

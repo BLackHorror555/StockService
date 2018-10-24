@@ -65,27 +65,19 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
         @Override
         public void onConnected(boolean isSuccess) {
             if (!isSuccess) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getActivity(), "Failed connection", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                handler.post(() -> Toast.makeText(getActivity(), "Failed connection", Toast.LENGTH_SHORT).show());
             }
 
         }
 
         @Override
         public void onTraderUpdate(final Trader trader) {
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    updateMoneyGraph(Integer.toString(trader.getID()), trader.getMoney());
-                    Map<ProductType, Integer> products = trader.getProducts();
-                    productsView.setText("");
-                    for (ProductType productType : products.keySet()){
-                        productsView.append(productType.name() + " - " + products.get(productType) + "\n");
-                    }
+            handler.post(() -> {
+                updateMoneyGraph(Integer.toString(trader.getID()), trader.getMoney());
+                Map<ProductType, Integer> products = trader.getProducts();
+                productsView.setText("");
+                for (ProductType productType : products.keySet()) {
+                    productsView.append(productType.name() + " - " + products.get(productType) + "\n");
                 }
             });
 
@@ -94,14 +86,10 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
         @Override
         public void onTradingFinish(final Trader trader) {
 
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    String id = Integer.toString(trader.getID());
-                    //int pos = adapter.getPosition("Trader " + id);
-                    adapter.remove("Trader " + id);
-                    adapter.insert("Trader " + id + " - disconnected", adapter.getCount());
-                }
+            handler.post(() -> {
+                String id = Integer.toString(trader.getID());
+                adapter.remove("Trader " + id);
+                adapter.insert("Trader " + id + " - disconnected", adapter.getCount());
             });
 
         }
@@ -114,7 +102,7 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
         View v = inflater.inflate(R.layout.fragment_client_monitoring, container, false);
 
         newClientButton = v.findViewById(R.id.new_client_btn);
-        moneyGraph =  v.findViewById(R.id.client_money_graph);
+        moneyGraph = v.findViewById(R.id.client_money_graph);
         spinner = v.findViewById(R.id.client_spinner);
         productsView = v.findViewById(R.id.products_view);
 
@@ -128,7 +116,7 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
     }
 
     /**
-     * initialise spinner with adapter and item selected listener
+     * initialise spinner with adapter and item selected list
      */
     private void initSpinner() {
         adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item);
@@ -156,6 +144,7 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
 
     /**
      * put new data points with money into graph
+     *
      * @param id
      * @param money
      */
@@ -175,7 +164,6 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
         moneySeriesMap.get(id).appendData(dataPoint, true, 20);
         lastX++;
     }
-
 
 
     @Override
@@ -214,7 +202,7 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()){
+        switch (v.getId()) {
             case R.id.new_client_btn:
                 ClientBotManager.getInstance().newClientBot(traderUpdateCallback);
                 break;

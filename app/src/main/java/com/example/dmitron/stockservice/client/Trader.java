@@ -32,6 +32,10 @@ public class Trader {
         products.put(ProductType.ORANGE, 1);
     }
 
+    /**
+     * get unique id of the trader
+     * @return the trader id
+     */
     public int getID(){
         return ID;
     }
@@ -42,6 +46,11 @@ public class Trader {
         products.put(productType, ++count);
     }
 
+    /**
+     * take the product from the trader
+     * @param productType type of product
+     * @return success
+     */
     boolean pickupProduct(ProductType productType){
         int count = products.containsKey(productType) ? products.get(productType) : 0;
         if (count == 0){
@@ -53,19 +62,37 @@ public class Trader {
         }
     }
 
+
+    /**
+     * check if trader has the product
+     * @param productType type of product to check
+     * @return has or not
+     */
     boolean isHasProduct(ProductType productType){
         return products.containsKey(productType) && products.get(productType) > 0;
     }
 
 
+    /**
+     * takes money
+     * @param money the amount of money to take
+     */
     void spendMoney(int money){
         this.money -= money;
     }
 
+    /**
+     * add money
+     * @param money amount of money to add
+     */
     void increaseMoney(int money){
         this.money += money;
     }
 
+    /**
+     *
+     * @return map product type : quantity oF products
+     */
     public Map<ProductType, Integer> getProducts() {
         return products;
     }

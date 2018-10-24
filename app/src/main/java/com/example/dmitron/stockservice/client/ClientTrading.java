@@ -70,6 +70,10 @@ public class ClientTrading {
         return receiveProductInfo();
     }
 
+    /**
+     * receive json with products from server
+     * @return
+     */
     private Map<ProductType, Integer> receiveProductInfo() {
         Map<ProductType, Integer> products = new EnumMap<>(ProductType.class);
         try {
