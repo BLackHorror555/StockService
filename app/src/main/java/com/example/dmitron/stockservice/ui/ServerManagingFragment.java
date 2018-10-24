@@ -88,6 +88,9 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
         return v;
     }
 
+    /**
+     * initialise product list view with adapter
+     */
     private void initListView() {
         productsAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1);
         productsListView.setAdapter(productsAdapter);
@@ -100,6 +103,10 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
         super.onActivityCreated(savedInstanceState);
     }
 
+
+    /**
+     * initialise spinner with adapter and item selected listener
+     */
     private void initSpinner() {
         graphAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item);
         graphAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -122,6 +129,9 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
         });
     }
 
+    /**
+     * setup graph view
+     */
     private void createGraph() {
 
         graph.getViewport().setXAxisBoundsManual(true);
@@ -201,8 +211,6 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
 
             //update products list view
             productsAdapter.add(product + ", price - " + products.getInt(product));
-
-            //productsView.append(product + " : " + products.get(product) + "\n");
         }
     }
 
@@ -225,6 +233,9 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
         LocalBroadcastManager.getInstance(context).registerReceiver(clientCountReceiver, filter);
     }
 
+    /**
+     * start background service
+     */
     public void onStartService() {
         Intent intent = new Intent(getActivity(), StockService.class);
         getActivity().startService(intent);
@@ -234,6 +245,10 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
 
     }
 
+
+    /**
+     * stop service
+     */
     public void onStopService() {
         getActivity().stopService(new Intent(getActivity(), StockService.class));
 

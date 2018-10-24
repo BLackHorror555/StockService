@@ -55,6 +55,10 @@ public class ServerTrading {
         LocalBroadcastManager.getInstance(context).sendBroadcast(local);
     }
 
+    /**
+     * initialised input and output socket streams
+     * @throws IOException initialisation error
+     */
     public void initStreams() throws IOException {
         if (socket != null) {
             dataIn = new DataInputStream(new BufferedInputStream(socket.getInputStream()));

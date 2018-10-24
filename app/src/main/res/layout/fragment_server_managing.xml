@@ -6,21 +6,6 @@
     android:layout_height="match_parent">
 
     <Button
-        android:id="@+id/start_service_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="32dp"
-        android:layout_marginEnd="8dp"
-        android:layout_weight="1"
-        android:enabled="true"
-        android:text="Start service"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.178"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
         android:id="@+id/stop_service_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -29,11 +14,25 @@
         android:layout_weight="1"
         android:enabled="false"
         android:text="Stop service"
-        app:layout_constraintBottom_toBottomOf="@+id/start_service_btn"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.515"
+        app:layout_constraintHorizontal_bias="0.421"
         app:layout_constraintStart_toEndOf="@+id/start_service_btn"
         app:layout_constraintTop_toTopOf="@+id/start_service_btn" />
+
+    <Button
+        android:id="@+id/start_service_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="40dp"
+        android:layout_marginEnd="8dp"
+        android:layout_weight="1"
+        android:enabled="true"
+        android:text="Start service"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.178"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/client_count_view"
@@ -65,8 +64,8 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/stop_service_btn"
-        app:layout_constraintVertical_bias="0.042" />
+        app:layout_constraintTop_toTopOf="@+id/barrier"
+        app:layout_constraintVertical_bias="0.032" />
 
     <com.jjoe64.graphview.GraphView
         android:id="@+id/graph"
@@ -117,13 +116,22 @@
     <ListView
         android:id="@+id/products_list_view"
         android:layout_width="395dp"
-        android:layout_height="131dp"
+        android:layout_height="134dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="8dp"
+        android:background="@color/colorAccent"
+        android:scrollbars="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView" />
+
+    <android.support.constraint.Barrier
+        android:id="@+id/barrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="start_service_btn,stop_service_btn" />
 
 </android.support.constraint.ConstraintLayout>

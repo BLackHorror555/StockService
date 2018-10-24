@@ -16,6 +16,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.dmitron.stockservice.R;
 import com.example.dmitron.stockservice.client.ClientBot;
@@ -60,6 +61,20 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
     private ClientBot.TraderUpdateCallback traderUpdateCallback = new ClientBot.TraderUpdateCallback() {
 
         Handler handler = new Handler(Looper.getMainLooper());
+
+        @Override
+        public void onConnected(boolean isSuccess) {
+            if (!isSuccess) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getActivity(), "Failed connection", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+        }
+
         @Override
         public void onTraderUpdate(final Trader trader) {
             handler.post(new Runnable() {
@@ -112,6 +127,9 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
         return v;
     }
 
+    /**
+     * initialise spinner with adapter and item selected listener
+     */
     private void initSpinner() {
         adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -165,6 +183,9 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
         super.onDetach();
     }
 
+    /**
+     * setup graph
+     */
     private void createGraphs() {
         moneyGraph.getViewport().setXAxisBoundsManual(true);
         //moneyGraph.getViewport().setMinX(0);

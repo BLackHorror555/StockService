@@ -55,6 +55,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    /**
+     * initialise navigation drawer
+     */
     private void initNavDrawer() {
         drawerLayout = findViewById(R.id.drawer_layout);
         NavigationView navigationView = findViewById(R.id.nav_view);
@@ -80,6 +83,10 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * shows received fragment and hides the rest
+     * @param showFragment fragment to show
+     */
     private void showFragment(Fragment showFragment){
         FragmentManager fm = getSupportFragmentManager();
         for (Fragment fragment : fm.getFragments()) {
@@ -95,6 +102,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * initialise toolbar
+     */
     private void initToolbar() {
         android.support.v7.widget.Toolbar toolbar =  findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);

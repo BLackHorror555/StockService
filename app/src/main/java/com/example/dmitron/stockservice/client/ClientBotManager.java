@@ -11,8 +11,6 @@ public class ClientBotManager {
     }
 
     private static ClientBotManager clientManager;
-    //private Context context;
-
     private ThreadPoolExecutor clientsPool;
 
 
@@ -22,11 +20,18 @@ public class ClientBotManager {
         return clientManager;
     }
 
+    /**
+     * create new bot trader
+     * @param listener
+     */
     public void newClientBot(ClientBot.TraderUpdateCallback listener){
         clientsPool.execute(new ClientBot(listener));
     }
-    
 
+
+    /**
+     * cancel all client bots
+     */
     public void cancelAllClients(){
         clientsPool.shutdownNow();
     }

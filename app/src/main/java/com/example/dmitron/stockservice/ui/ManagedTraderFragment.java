@@ -77,6 +77,9 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
         return v;
     }
 
+    /**
+     * initialise product and trader list views
+     */
     private void initViews() {
         stockProductsAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1);
         stockProductsListView.setAdapter(stockProductsAdapter);
@@ -107,6 +110,9 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
         });
     }
 
+    /**
+     * update adapter and money view with changed trader data
+     */
     private void updateTraderInfoOnUi() {
         Map<ProductType, Integer> products = trader.getProducts();
         traderProductsAdapter.clear();

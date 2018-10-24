@@ -25,7 +25,6 @@ public class ClientBot extends Client implements Runnable{
 
     public ClientBot(TraderUpdateCallback listener) {
         this.listener = listener;
-        trader = new Trader();
     }
 
 
@@ -33,6 +32,14 @@ public class ClientBot extends Client implements Runnable{
     public void run() {
         try {
             connectToServer();
+            trader = new Trader();
+            listener.onConnected(true);
+        } catch (IOException e) {
+            e.printStackTrace();
+            listener.onConnected(false);
+            return;
+        }
+        try{
             clientTrading = new ClientTrading(this);
 
             startBotTrading(10);
@@ -58,6 +65,9 @@ public class ClientBot extends Client implements Runnable{
     }
 
 
+    /**
+     * notify listener that trader data changed
+     */
     private void notifyTraderUpdate(){
         if (listener != null)
             listener.onTraderUpdate(trader);
@@ -125,6 +135,7 @@ public class ClientBot extends Client implements Runnable{
      * implement this to know about trader bots updates
      */
     public interface TraderUpdateCallback {
+        void onConnected(boolean isSuccess);
         void onTraderUpdate(Trader trader);
         void onTradingFinish(Trader trader);
     }

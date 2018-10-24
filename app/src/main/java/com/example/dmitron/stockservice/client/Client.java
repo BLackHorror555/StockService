@@ -18,6 +18,10 @@ public class Client  {
     }
 
 
+    /**
+     * connect to server with default port and address
+     * @throws IOException failed connection
+     */
     public void connectToServer() throws IOException {
 
         socket = new Socket(ADDRESS, SERVER_PORT);
@@ -27,6 +31,11 @@ public class Client  {
 
     }
 
+
+    /**
+     * connect to server with specified port and address
+     * @throws IOException failed connection
+     */
     public void connectToServer(String address, int port) throws IOException {
 
         socket = new Socket(address, port);
@@ -34,6 +43,10 @@ public class Client  {
     }
 
 
+    /**
+     * close socket connection
+     * @throws IOException socket closing error
+     */
     public void closeConnection() throws IOException {
         if (socket != null && !socket.isClosed())
             socket.close();
