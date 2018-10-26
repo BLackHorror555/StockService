@@ -1,4 +1,4 @@
-package com.example.dmitron.stockservice.server;
+package com.example.dmitron.stockservice.servermanaging.server;
 
 import android.content.Context;
 import android.content.Intent;
@@ -6,8 +6,8 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.example.dmitron.stockservice.R;
-import com.example.dmitron.stockservice.stock.ProductType;
-import com.example.dmitron.stockservice.stock.StockManager;
+import com.example.dmitron.stockservice.servermanaging.data.stock.ProductType;
+import com.example.dmitron.stockservice.servermanaging.data.stock.StockManager;
 
 import org.json.JSONObject;
 
@@ -50,7 +50,7 @@ public class ServerTrading {
 
         Intent local = new Intent();
         local.setAction(context.getString(R.string.update_products_action));
-        local.putExtra("products", sm.createJson().toString());
+        local.putExtra(context.getString(R.string.products_extra), sm.createJson().toString());
 
         LocalBroadcastManager.getInstance(context).sendBroadcast(local);
     }

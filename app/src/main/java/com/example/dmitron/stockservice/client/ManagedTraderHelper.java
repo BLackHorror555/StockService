@@ -2,21 +2,21 @@ package com.example.dmitron.stockservice.client;
 
 import android.os.AsyncTask;
 
-import com.example.dmitron.stockservice.stock.ProductType;
+import com.example.dmitron.stockservice.servermanaging.data.stock.ProductType;
 
 import java.io.IOException;
 
 public class ManagedTraderHelper {
 
-    private ManagedTraderCallback listener;
-    private ClientTrading clientTrading;
-    private final Trader trader;
-    private Client client;
+    private ManagedTraderCallback mListener;
+    private ClientTrading mClientTrading;
+    private final Trader mTrader;
+    private Client mClient;
 
 
     public ManagedTraderHelper(ManagedTraderCallback listener, final Trader trader) {
-        this.listener = listener;
-        this.trader = trader;
+        this.mListener = listener;
+        this.mTrader = trader;
     }
 
     /**
@@ -28,9 +28,9 @@ public class ManagedTraderHelper {
         protected Boolean doInBackground(Void... voids) {
 
             try {
-                client = new Client();
-                client.connectToServer();
-                clientTrading = new ClientTrading(client);
+                mClient = new Client();
+                mClient.connectToServer();
+                mClientTrading = new ClientTrading(mClient);
             } catch (IOException e) {
                 e.printStackTrace();
                 return false;
@@ -41,7 +41,7 @@ public class ManagedTraderHelper {
 
         @Override
         protected void onPostExecute(Boolean success) {
-            listener.onConnectionTaskComplete(success);
+            mListener.onConnectionTaskComplete(success);
         }
     }
 
@@ -60,12 +60,12 @@ public class ManagedTraderHelper {
 
         @Override
         protected Boolean doInBackground(Void... voids) {
-            return clientTrading.buyProduct(trader, productType);
+            return mClientTrading.buyProduct(mTrader, productType);
         }
 
         @Override
         protected void onPostExecute(Boolean success) {
-            listener.onBuyingCompleted(success);
+            mListener.onBuyingCompleted(success);
         }
     }
 
@@ -83,12 +83,12 @@ public class ManagedTraderHelper {
 
         @Override
         protected Boolean doInBackground(Void... voids) {
-            return clientTrading.sellProduct(trader, productType);
+            return mClientTrading.sellProduct(mTrader, productType);
         }
 
         @Override
         protected void onPostExecute(Boolean success) {
-            listener.onSellingCompleted(success);
+            mListener.onSellingCompleted(success);
         }
     }
 
@@ -101,8 +101,8 @@ public class ManagedTraderHelper {
         protected Void doInBackground(Void... voids) {
 
             try {
-                clientTrading.finishConnection();
-                client.closeConnection();
+                mClientTrading.finishConnection();
+                mClient.closeConnection();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -111,7 +111,7 @@ public class ManagedTraderHelper {
 
         @Override
         protected void onPostExecute(Void aVoid) {
-            listener.onConnectionFinishTaskComplete();
+            mListener.onConnectionFinishTaskComplete();
         }
     }
 

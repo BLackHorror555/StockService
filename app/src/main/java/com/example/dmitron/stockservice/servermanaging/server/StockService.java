@@ -1,4 +1,4 @@
-package com.example.dmitron.stockservice.server;
+package com.example.dmitron.stockservice.servermanaging.server;
 
 import android.app.Service;
 import android.content.Intent;
@@ -108,7 +108,7 @@ public class StockService extends Service {
             Intent local = new Intent();
 
             local.setAction(getString(R.string.client_count_action));
-            local.putExtra("client_count", Integer.toString(clientCount));
+            local.putExtra("client_count", clientCount);
 
             LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(local);
         }

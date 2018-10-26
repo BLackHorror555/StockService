@@ -1,11 +1,11 @@
-package com.example.dmitron.stockservice.stock;
+package com.example.dmitron.stockservice.servermanaging.data.stock;
 
 import java.util.EnumMap;
 import java.util.Map;
 
 public class Stock {
 
-    Map<ProductType, Product> products = new EnumMap<ProductType, Product>(ProductType.class);
+    Map<ProductType, Product> mProducts = new EnumMap<ProductType, Product>(ProductType.class);
 
     Stock(){
         initStock();
@@ -14,7 +14,7 @@ public class Stock {
     private void initStock() {
         for (ProductType type : ProductType.values()){
             Product product = new Product(type);
-            products.put(type, product);
+            mProducts.put(type, product);
         }
     }
 
@@ -25,10 +25,10 @@ public class Stock {
      */
     public boolean AddProduct(ProductType type){
         boolean result;
-        if (products.containsKey(type)){
+        if (mProducts.containsKey(type)){
             result = false;
         } else {
-            products.put(type, new Product(type));
+            mProducts.put(type, new Product(type));
             result = true;
         }
         return result;
@@ -36,10 +36,10 @@ public class Stock {
 
 
     public Map<ProductType, Product> getProducts() {
-        return products;
+        return mProducts;
     }
 
     public boolean deleteProduct(ProductType type){
-        return products.remove(type) != null;
+        return mProducts.remove(type) != null;
     }
 }

@@ -1,4 +1,4 @@
-package com.example.dmitron.stockservice.ui;
+package com.example.dmitron.stockservice.client;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -19,9 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.dmitron.stockservice.R;
-import com.example.dmitron.stockservice.client.ManagedTraderHelper;
-import com.example.dmitron.stockservice.client.Trader;
-import com.example.dmitron.stockservice.stock.ProductType;
+import com.example.dmitron.stockservice.servermanaging.data.stock.ProductType;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,19 +30,19 @@ import java.util.Map;
 
 public class ManagedTraderFragment extends Fragment implements View.OnClickListener, ManagedTraderHelper.ManagedTraderCallback {
 
-    private BroadcastReceiver updateStockProductReceiver;
+    private BroadcastReceiver mUpdateStockProductReceiver;
 
-    private Button createTraderButton;
-    private Button killTraderButton;
-    private TextView moneyView;
-    private ListView stockProductsListView;
-    private ListView traderProductsListView;
+    private Button mCreateTraderButton;
+    private Button mKillTraderButton;
+    private TextView mMoneyView;
+    private ListView mStockProductsListView;
+    private ListView mTraderProductsListView;
 
-    private ArrayAdapter<String> stockProductsAdapter;
-    private ArrayAdapter<String> traderProductsAdapter;
+    private ArrayAdapter<String> mStockProductsAdapter;
+    private ArrayAdapter<String> mTraderProductsAdapter;
 
-    private Trader trader;
-    private ManagedTraderHelper managedTraderHelper;
+    private Trader mTrader;
+    private ManagedTraderHelper mManagedTraderHelper;
 
     @Override
     public void onAttach(Context context) {
@@ -63,57 +61,57 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_managed_trader, container, false);
 
-        createTraderButton = v.findViewById(R.id.create_trader_button);
-        moneyView = v.findViewById(R.id.trader_money_view);
-        stockProductsListView = v.findViewById(R.id.stock_products_list);
-        traderProductsListView = v.findViewById(R.id.trader_products_list_view);
-        killTraderButton = v.findViewById(R.id.kill_trader_button);
+        mCreateTraderButton = v.findViewById(R.id.create_trader_button);
+        mMoneyView = v.findViewById(R.id.trader_money_view);
+        mStockProductsListView = v.findViewById(R.id.stock_products_list);
+        mTraderProductsListView = v.findViewById(R.id.trader_products_list_view);
+        mKillTraderButton = v.findViewById(R.id.kill_trader_button);
 
         initViews();
 
-        createTraderButton.setOnClickListener(this);
-        killTraderButton.setOnClickListener(this);
+        mCreateTraderButton.setOnClickListener(this);
+        mKillTraderButton.setOnClickListener(this);
         return v;
     }
 
     /**
-     * initialise product and trader list views
+     * initialise product and mTrader list views
      */
     private void initViews() {
-        stockProductsAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1);
-        stockProductsListView.setAdapter(stockProductsAdapter);
+        mStockProductsAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1);
+        mStockProductsListView.setAdapter(mStockProductsAdapter);
 
-        stockProductsListView.setOnItemClickListener((parent, view, position, id) -> {
+        mStockProductsListView.setOnItemClickListener((parent, view, position, id) -> {
 
             String productName = ((String) parent.getItemAtPosition(position)).split(",")[0];
             ProductType productType = ProductType.valueOf(productName);
 
-            managedTraderHelper.new BuyingTask(productType).execute();
+            mManagedTraderHelper.new BuyingTask(productType).execute();
         });
 
-        traderProductsAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1);
-        traderProductsListView.setAdapter(traderProductsAdapter);
+        mTraderProductsAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1);
+        mTraderProductsListView.setAdapter(mTraderProductsAdapter);
 
-        traderProductsListView.setOnItemClickListener((parent, view, position, id) -> {
+        mTraderProductsListView.setOnItemClickListener((parent, view, position, id) -> {
 
             String productName = ((String) parent.getItemAtPosition(position)).split(",")[0];
             ProductType productType = ProductType.valueOf(productName);
-            managedTraderHelper.new SellingTask(productType).execute();
+            mManagedTraderHelper.new SellingTask(productType).execute();
         });
     }
 
     /**
-     * update adapter and money view with changed trader data
+     * update adapter and money view with changed mTrader data
      */
     private void updateTraderInfoOnUi() {
-        Map<ProductType, Integer> products = trader.getProducts();
-        traderProductsAdapter.clear();
+        Map<ProductType, Integer> products = mTrader.getProducts();
+        mTraderProductsAdapter.clear();
 
         for (ProductType productType : products.keySet()) {
-            traderProductsAdapter.add(productType.name() + ", amount - " + products.get(productType));
+            mTraderProductsAdapter.add(productType.name() + ", amount - " + products.get(productType));
         }
 
-        moneyView.setText(String.format(Locale.getDefault(), "%d", trader.getMoney()));
+        mMoneyView.setText(String.format(Locale.getDefault(), "%d", mTrader.getMoney()));
     }
 
 
@@ -127,7 +125,7 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
 
         filter.addAction(getString(R.string.update_products_action));
 
-        updateStockProductReceiver = new BroadcastReceiver() {
+        mUpdateStockProductReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
 
@@ -141,7 +139,7 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
 
             }
         };
-        LocalBroadcastManager.getInstance(context).registerReceiver(updateStockProductReceiver, filter);
+        LocalBroadcastManager.getInstance(context).registerReceiver(mUpdateStockProductReceiver, filter);
     }
 
     /**
@@ -151,18 +149,18 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
      */
     private void updateProductsInfo(JSONObject jsonProducts) throws JSONException {
         Iterator<String> iterator = jsonProducts.keys();
-        stockProductsAdapter.clear();
+        mStockProductsAdapter.clear();
 
         while (iterator.hasNext()) {
             String product = iterator.next();
-            stockProductsAdapter.add(product + ", price - " + jsonProducts.getInt(product));
+            mStockProductsAdapter.add(product + ", price - " + jsonProducts.getInt(product));
         }
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
-        LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(updateStockProductReceiver);
+        LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mUpdateStockProductReceiver);
     }
 
     @Override
@@ -173,20 +171,20 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
                 break;
 
             case R.id.kill_trader_button:
-                managedTraderHelper.new FinishConnectionTask().execute();
+                mManagedTraderHelper.new FinishConnectionTask().execute();
                 break;
         }
     }
 
     /**
-     * create new managed trader and connect to server
+     * create new managed mTrader and connect to server
      * is success return in callback
      */
     private void createManagedTrader() {
-        trader = new Trader();
+        mTrader = new Trader();
 
-        managedTraderHelper = new ManagedTraderHelper(this, trader);
-        managedTraderHelper.new ConnectToServerTask().execute();
+        mManagedTraderHelper = new ManagedTraderHelper(this, mTrader);
+        mManagedTraderHelper.new ConnectToServerTask().execute();
 
     }
 
@@ -214,17 +212,17 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
 
         } else {
             updateTraderInfoOnUi();
-            createTraderButton.setEnabled(false);
-            killTraderButton.setEnabled(true);
+            mCreateTraderButton.setEnabled(false);
+            mKillTraderButton.setEnabled(true);
         }
 
     }
 
     @Override
     public void onConnectionFinishTaskComplete() {
-        traderProductsAdapter.clear();
-        killTraderButton.setEnabled(false);
-        moneyView.setText("");
-        createTraderButton.setEnabled(true);
+        mTraderProductsAdapter.clear();
+        mKillTraderButton.setEnabled(false);
+        mMoneyView.setText("");
+        mCreateTraderButton.setEnabled(true);
     }
 }

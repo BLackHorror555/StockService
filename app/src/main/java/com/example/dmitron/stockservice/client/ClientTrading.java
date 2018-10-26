@@ -2,8 +2,8 @@ package com.example.dmitron.stockservice.client;
 
 import android.util.Log;
 
-import com.example.dmitron.stockservice.server.RequestType;
-import com.example.dmitron.stockservice.stock.ProductType;
+import com.example.dmitron.stockservice.servermanaging.server.RequestType;
+import com.example.dmitron.stockservice.servermanaging.data.stock.ProductType;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -27,16 +27,16 @@ public class ClientTrading {
 
     private static final String TAG = "ClientTrading";
 
-    private Socket socket;
+    private Socket mSocket;
 
-    private DataInputStream in;
-    private DataOutputStream out;
+    private DataInputStream mIn;
+    private DataOutputStream mOut;
 
     public ClientTrading(Client client) throws IOException {
-        this.socket = client.socket;
+        this.mSocket = client.mSocket;
         //trader = new Trader();
-        in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-        out = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+        mIn = new DataInputStream(new BufferedInputStream(mSocket.getInputStream()));
+        mOut = new DataOutputStream(new BufferedOutputStream(mSocket.getOutputStream()));
     }
 
 
@@ -46,9 +46,9 @@ public class ClientTrading {
      */
     public void finishConnection() {
         try {
-            out.writeByte(RequestType.CLOSE_CONNECTION.ordinal());
-            out.writeShort(0);
-            out.flush();
+            mOut.writeByte(RequestType.CLOSE_CONNECTION.ordinal());
+            mOut.writeShort(0);
+            mOut.flush();
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -61,9 +61,9 @@ public class ClientTrading {
      */
     public Map<ProductType, Integer> getProductsFromServer() {
         try {
-            out.writeByte(RequestType.PRODUCT_INFO.ordinal());
-            out.writeShort(0);
-            out.flush();
+            mOut.writeByte(RequestType.PRODUCT_INFO.ordinal());
+            mOut.writeShort(0);
+            mOut.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -78,20 +78,20 @@ public class ClientTrading {
         Map<ProductType, Integer> products = new EnumMap<>(ProductType.class);
         try {
             //wait until dataIn stream available 3 bytes (1 - request type, 2 - length)
-            while (in.available() < 3)
+            while (mIn.available() < 3)
                 Thread.sleep(50);
 
-            RequestType requestType = RequestType.values()[in.readByte()];
-            short messageLength = in.readShort();
+            RequestType requestType = RequestType.values()[mIn.readByte()];
+            short messageLength = mIn.readShort();
 
             //wait until dataIn stream available "length" bytes
             while (true) {
-                if (in.available() >= messageLength)
+                if (mIn.available() >= messageLength)
                     break;
             }
             Log.i(TAG, "receiveProductInfo: product info message is available to read");
             byte[] bytes = new byte[messageLength];
-            in.read(bytes, 0, messageLength);
+            mIn.read(bytes, 0, messageLength);
             String jsonString = new String(bytes);
 
             JSONObject jsonObject = new JSONObject(jsonString);
@@ -121,10 +121,10 @@ public class ClientTrading {
             if (getProductsFromServer().get(productType) > trader.getMoney())
                 return false;
 
-            out.writeByte(RequestType.BUYING.ordinal());
-            out.writeShort(1);
-            out.writeByte(productType.ordinal());
-            out.flush();
+            mOut.writeByte(RequestType.BUYING.ordinal());
+            mOut.writeShort(1);
+            mOut.writeByte(productType.ordinal());
+            mOut.flush();
             int spendMoney = receiveBuyingConfirm();
             if (spendMoney != -1){
                 trader.spendMoney(spendMoney);
@@ -149,10 +149,10 @@ public class ClientTrading {
             if (!trader.isHasProduct(productType))
                 return false;
 
-            out.writeByte(RequestType.SELLING.ordinal());
-            out.writeShort(1);
-            out.writeByte(productType.ordinal());
-            out.flush();
+            mOut.writeByte(RequestType.SELLING.ordinal());
+            mOut.writeShort(1);
+            mOut.writeByte(productType.ordinal());
+            mOut.flush();
 
             int soldItemPrice = receiveSellingConfirmation();
 
@@ -174,33 +174,33 @@ public class ClientTrading {
      * @throws IOException          while checking available symbols
      */
     private int receiveSellingConfirmation() throws InterruptedException, IOException {
-        while (in.available() < 1)
+        while (mIn.available() < 1)
             Thread.sleep(50);
-        RequestType requestType = RequestType.values()[in.readByte()];
+        RequestType requestType = RequestType.values()[mIn.readByte()];
 
-        while (in.available() < 4)
+        while (mIn.available() < 4)
             Thread.sleep(50);
 
-        return in.readInt();
+        return mIn.readInt();
     }
 
 
     /**
      * do purchase on server and return purchase price or -1 if buying prohibited
      * @return -1 if buying prohibited, otherwise price
-     * @throws InterruptedException while waiting for available in
+     * @throws InterruptedException while waiting for available mIn
      * @throws IOException  error reading from input stream
      */
     private int receiveBuyingConfirm() throws InterruptedException, IOException {
         int price = -1;
-        while (in.available() < 1)
+        while (mIn.available() < 1)
             Thread.sleep(50);
-        RequestType requestType = RequestType.values()[in.readByte()];
+        RequestType requestType = RequestType.values()[mIn.readByte()];
 
         if (requestType == RequestType.OPERATION_ACCEPTED){
-            while (in.available() < 4)
+            while (mIn.available() < 4)
                 Thread.sleep(50);
-            price = in.readInt();
+            price = mIn.readInt();
         }
 
         return price;

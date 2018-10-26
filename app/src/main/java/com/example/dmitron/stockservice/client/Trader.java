@@ -1,17 +1,17 @@
 package com.example.dmitron.stockservice.client;
 
 
-import com.example.dmitron.stockservice.stock.ProductType;
+import com.example.dmitron.stockservice.servermanaging.data.stock.ProductType;
 
 import java.util.EnumMap;
 import java.util.Map;
 
 public class Trader {
 
-    private final int ID;
-    private static int lastID = 0;
+    private final int mId;
+    private static int sLastId = 0;
     private static final int DEFAULT_MONEY = 500;
-    private int money;
+    private int mMoney;
 
     /**
      * Map - Product type : number of products
@@ -19,15 +19,15 @@ public class Trader {
     private Map<ProductType, Integer> products;
 
     public Trader(){
-        ID = lastID++;
-        money = DEFAULT_MONEY;
+        mId = sLastId++;
+        mMoney = DEFAULT_MONEY;
         products = new EnumMap<>(ProductType.class);
         products.put(ProductType.ORANGE, 1);
     }
 
     Trader(int money){
-        ID = lastID++;
-        this.money = money;
+        mId = sLastId++;
+        this.mMoney = money;
         products = new EnumMap<>(ProductType.class);
         products.put(ProductType.ORANGE, 1);
     }
@@ -36,8 +36,8 @@ public class Trader {
      * get unique id of the trader
      * @return the trader id
      */
-    public int getID(){
-        return ID;
+    public int getId(){
+        return mId;
     }
 
 
@@ -74,19 +74,19 @@ public class Trader {
 
 
     /**
-     * takes money
-     * @param money the amount of money to take
+     * takes mMoney
+     * @param money the amount of mMoney to take
      */
     void spendMoney(int money){
-        this.money -= money;
+        this.mMoney -= money;
     }
 
     /**
-     * add money
-     * @param money amount of money to add
+     * add mMoney
+     * @param money amount of mMoney to add
      */
     void increaseMoney(int money){
-        this.money += money;
+        this.mMoney += money;
     }
 
     /**
@@ -98,6 +98,6 @@ public class Trader {
     }
 
     public int getMoney() {
-        return money;
+        return mMoney;
     }
 }

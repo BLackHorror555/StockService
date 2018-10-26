@@ -1,4 +1,4 @@
-package com.example.dmitron.stockservice.ui;
+package com.example.dmitron.stockservice.client;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -19,10 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.dmitron.stockservice.R;
-import com.example.dmitron.stockservice.client.ClientBot;
-import com.example.dmitron.stockservice.client.ClientBotManager;
-import com.example.dmitron.stockservice.client.Trader;
-import com.example.dmitron.stockservice.stock.ProductType;
+import com.example.dmitron.stockservice.servermanaging.data.stock.ProductType;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.LegendRenderer;
 import com.jjoe64.graphview.series.DataPoint;
@@ -34,15 +31,15 @@ import java.util.Random;
 
 public class ClientMonitoringFragment extends Fragment implements View.OnClickListener {
 
-    private GraphView moneyGraph;
-    private HashMap<String, LineGraphSeries<DataPoint>> moneySeriesMap;
-    private int lastX = 0;
+    private GraphView mMoneyGraph;
+    private HashMap<String, LineGraphSeries<DataPoint>> mMoneySeriesMap;
+    private int mLastX = 0;
 
     //UI
-    private Button newClientButton;
-    private Spinner spinner;
-    private ArrayAdapter<String> adapter;
-    private TextView productsView;
+    private Button mNewClientButton;
+    private Spinner mSpinner;
+    private ArrayAdapter<String> mArrayAdapter;
+    private TextView mProductsView;
 
     //private static Handler handler;
 
@@ -73,11 +70,11 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
         @Override
         public void onTraderUpdate(final Trader trader) {
             handler.post(() -> {
-                updateMoneyGraph(Integer.toString(trader.getID()), trader.getMoney());
+                updateMoneyGraph(Integer.toString(trader.getId()), trader.getMoney());
                 Map<ProductType, Integer> products = trader.getProducts();
-                productsView.setText("");
+                mProductsView.setText("");
                 for (ProductType productType : products.keySet()) {
-                    productsView.append(productType.name() + " - " + products.get(productType) + "\n");
+                    mProductsView.append(productType.name() + " - " + products.get(productType) + "\n");
                 }
             });
 
@@ -87,9 +84,9 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
         public void onTradingFinish(final Trader trader) {
 
             handler.post(() -> {
-                String id = Integer.toString(trader.getID());
-                adapter.remove("Trader " + id);
-                adapter.insert("Trader " + id + " - disconnected", adapter.getCount());
+                String id = Integer.toString(trader.getId());
+                mArrayAdapter.remove("Trader " + id);
+                mArrayAdapter.insert("Trader " + id + " - disconnected", mArrayAdapter.getCount());
             });
 
         }
@@ -101,12 +98,12 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_client_monitoring, container, false);
 
-        newClientButton = v.findViewById(R.id.new_client_btn);
-        moneyGraph = v.findViewById(R.id.client_money_graph);
-        spinner = v.findViewById(R.id.client_spinner);
-        productsView = v.findViewById(R.id.products_view);
+        mNewClientButton = v.findViewById(R.id.new_client_btn);
+        mMoneyGraph = v.findViewById(R.id.client_money_graph);
+        mSpinner = v.findViewById(R.id.client_spinner);
+        mProductsView = v.findViewById(R.id.products_view);
 
-        newClientButton.setOnClickListener(this);
+        mNewClientButton.setOnClickListener(this);
 
         rnd = new Random();
 
@@ -116,21 +113,21 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
     }
 
     /**
-     * initialise spinner with adapter and item selected list
+     * initialise mSpinner with mArrayAdapter and item selected list
      */
     private void initSpinner() {
-        adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(adapter);
+        mArrayAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item);
+        mArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        mSpinner.setAdapter(mArrayAdapter);
 
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 String name = (String) parent.getItemAtPosition(position);
                 name = name.split(" ")[1];
-                moneyGraph.removeAllSeries();
-                if (moneySeriesMap.containsKey(name))
-                    moneyGraph.addSeries(moneySeriesMap.get(name));
+                mMoneyGraph.removeAllSeries();
+                if (mMoneySeriesMap.containsKey(name))
+                    mMoneyGraph.addSeries(mMoneySeriesMap.get(name));
 
             }
 
@@ -151,18 +148,18 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
     private void updateMoneyGraph(String id, int money) {
 
         //add client if he is not
-        if (!moneySeriesMap.containsKey(id)) {
+        if (!mMoneySeriesMap.containsKey(id)) {
             LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
             series.setColor(Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256)));
             series.setTitle("Trader " + id);
 
-            moneySeriesMap.put(id, series);
-            adapter.add("Trader " + id);
+            mMoneySeriesMap.put(id, series);
+            mArrayAdapter.add("Trader " + id);
         }
 
-        DataPoint dataPoint = new DataPoint(lastX, money);
-        moneySeriesMap.get(id).appendData(dataPoint, true, 20);
-        lastX++;
+        DataPoint dataPoint = new DataPoint(mLastX, money);
+        mMoneySeriesMap.get(id).appendData(dataPoint, true, 20);
+        mLastX++;
     }
 
 
@@ -175,27 +172,27 @@ public class ClientMonitoringFragment extends Fragment implements View.OnClickLi
      * setup graph
      */
     private void createGraphs() {
-        moneyGraph.getViewport().setXAxisBoundsManual(true);
-        //moneyGraph.getViewport().setMinX(0);
-        moneyGraph.getViewport().setMaxX(40);
-        moneyGraph.getViewport().setMinY(0);
+        mMoneyGraph.getViewport().setXAxisBoundsManual(true);
+        //mMoneyGraph.getViewport().setMinX(0);
+        mMoneyGraph.getViewport().setMaxX(40);
+        mMoneyGraph.getViewport().setMinY(0);
 
-        moneyGraph.getViewport().setScalable(true);
-        moneyGraph.getViewport().setScrollable(true);
-        moneyGraph.getViewport().setScalableY(true);
-        moneyGraph.getViewport().setScrollableY(true);
+        mMoneyGraph.getViewport().setScalable(true);
+        mMoneyGraph.getViewport().setScrollable(true);
+        mMoneyGraph.getViewport().setScalableY(true);
+        mMoneyGraph.getViewport().setScrollableY(true);
 
-        moneyGraph.getGridLabelRenderer().setHorizontalLabelsVisible(false);
+        mMoneyGraph.getGridLabelRenderer().setHorizontalLabelsVisible(false);
 
-        moneyGraph.setTitle("ClientBot money monitoring");
-        moneyGraph.setTitleTextSize(50);
+        mMoneyGraph.setTitle("ClientBot money monitoring");
+        mMoneyGraph.setTitleTextSize(50);
 
-        moneyGraph.getLegendRenderer().setVisible(true);
-        moneyGraph.getLegendRenderer().setAlign(LegendRenderer.LegendAlign.TOP);
-        moneyGraph.getLegendRenderer().setWidth(350);
-        moneyGraph.getLegendRenderer().setBackgroundColor(Color.TRANSPARENT);
+        mMoneyGraph.getLegendRenderer().setVisible(true);
+        mMoneyGraph.getLegendRenderer().setAlign(LegendRenderer.LegendAlign.TOP);
+        mMoneyGraph.getLegendRenderer().setWidth(350);
+        mMoneyGraph.getLegendRenderer().setBackgroundColor(Color.TRANSPARENT);
 
-        moneySeriesMap = new HashMap<>();
+        mMoneySeriesMap = new HashMap<>();
 
     }
 

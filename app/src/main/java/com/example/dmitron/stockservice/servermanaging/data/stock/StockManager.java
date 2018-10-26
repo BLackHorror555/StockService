@@ -1,4 +1,4 @@
-package com.example.dmitron.stockservice.stock;
+package com.example.dmitron.stockservice.servermanaging.data.stock;
 
 import android.util.Log;
 
@@ -9,13 +9,13 @@ import java.util.Map;
 
 public class StockManager {
     private static final String TAG = "StockManager";
-    private static StockManager stockManager;
+    private static StockManager sStockManager;
 
     private StockManager() {
-        stock = new Stock();
+        mStock = new Stock();
     }
 
-    private final Stock stock;
+    private final Stock mStock;
 
     /**
      * Called when client want to buy product
@@ -28,8 +28,8 @@ public class StockManager {
      */
     public synchronized int buyProduct(ProductType type) {
         int buyingPrice;
-        Product buyingProduct = stock.products.get(type);
-        if (!stock.products.containsKey(type))
+        Product buyingProduct = mStock.mProducts.get(type);
+        if (!mStock.mProducts.containsKey(type))
             buyingPrice = -1;
         else {
             buyingPrice = buyingProduct.getPrice();
@@ -40,8 +40,8 @@ public class StockManager {
                     Log.i(TAG, "buyProduct: product " + type.name() + "was bought");
                 }
                 else{
-                    stock.products.get(productType).decreaseInterest(1);
-                    stock.products.get(productType).decreasePrice(3);
+                    mStock.mProducts.get(productType).decreaseInterest(1);
+                    mStock.mProducts.get(productType).decreasePrice(3);
                 }
 
             }
@@ -59,7 +59,7 @@ public class StockManager {
      * @return price of sell item
      */
     public synchronized int sellProduct(ProductType type) {
-        Product buyingProduct = stock.products.get(type);
+        Product buyingProduct = mStock.mProducts.get(type);
         int sellingPrice = buyingProduct.getPrice();
         for (ProductType productType : ProductType.values()) {
             if (productType == type){
@@ -68,8 +68,8 @@ public class StockManager {
                 Log.i(TAG, "buyProduct: product " + type.name() + " was sold");
             }
             else{
-                stock.products.get(productType).increaseInterest(1);
-                stock.products.get(productType).increasePrice(3);
+                mStock.mProducts.get(productType).increaseInterest(1);
+                mStock.mProducts.get(productType).increasePrice(3);
             }
 
         }
@@ -79,7 +79,7 @@ public class StockManager {
 
 
     /**
-     * creates json object from products with fields product name (string) and price (int)
+     * creates json object from mProducts with fields product name (string) and price (int)
      * @return json object
      */
     public JSONObject createJson() {
@@ -98,13 +98,13 @@ public class StockManager {
     }
 
     public static StockManager getInstance() {
-        if (stockManager == null) {
-            stockManager = new StockManager();
+        if (sStockManager == null) {
+            sStockManager = new StockManager();
         }
-        return stockManager;
+        return sStockManager;
     }
 
     public Stock getStock() {
-        return stock;
+        return mStock;
     }
 }

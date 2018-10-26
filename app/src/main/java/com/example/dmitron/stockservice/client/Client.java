@@ -11,7 +11,7 @@ public class Client  {
     protected static final int SERVER_PORT = 1234;
     protected static final String ADDRESS = "localhost";
 
-    Socket socket;
+    Socket mSocket;
 
     public Client() {
 
@@ -24,7 +24,7 @@ public class Client  {
      */
     public void connectToServer() throws IOException {
 
-        socket = new Socket(ADDRESS, SERVER_PORT);
+        mSocket = new Socket(ADDRESS, SERVER_PORT);
 
         Log.i(TAG, "connectToServer: yes");
 
@@ -38,18 +38,18 @@ public class Client  {
      */
     public void connectToServer(String address, int port) throws IOException {
 
-        socket = new Socket(address, port);
+        mSocket = new Socket(address, port);
         Log.i(TAG, "connectToServer: yes");
     }
 
 
     /**
-     * close socket connection
-     * @throws IOException socket closing error
+     * close mSocket connection
+     * @throws IOException mSocket closing error
      */
     public void closeConnection() throws IOException {
-        if (socket != null && !socket.isClosed())
-            socket.close();
+        if (mSocket != null && !mSocket.isClosed())
+            mSocket.close();
     }
 
 

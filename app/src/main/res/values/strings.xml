@@ -4,4 +4,6 @@
     <string name="update_products_action">com.example.dmitron.stockservice.UPDATE_PRODUCTS_ACTION</string>
     <string name="client_info_action">com.example.dmitron.stockservice.CLIENT_INFO_ACTION</string>
     <string name="all_products">All products</string>
+    <string name="client_count_extra">client_count</string>
+    <string name="products_extra">products</string>
 </resources>

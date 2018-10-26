@@ -1,4 +1,4 @@
-package com.example.dmitron.stockservice.ui;
+package com.example.dmitron.stockservice;
 
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -11,7 +11,9 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 
-import com.example.dmitron.stockservice.R;
+import com.example.dmitron.stockservice.client.ClientMonitoringFragment;
+import com.example.dmitron.stockservice.client.ManagedTraderFragment;
+import com.example.dmitron.stockservice.servermanaging.ServerManagingFragment;
 
 public class MainActivity extends AppCompatActivity {
 

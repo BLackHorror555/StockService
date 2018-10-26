@@ -2,7 +2,7 @@ package com.example.dmitron.stockservice.client;
 
 import android.util.Log;
 
-import com.example.dmitron.stockservice.stock.ProductType;
+import com.example.dmitron.stockservice.servermanaging.data.stock.ProductType;
 
 import java.io.IOException;
 import java.util.Map;
@@ -18,13 +18,13 @@ public class ClientBot extends Client implements Runnable{
     private static final int TIME_BETWEEN_DEALS = 1000;
 
 
-    private ClientTrading clientTrading;
-    private TraderUpdateCallback listener;
+    private ClientTrading mClientTrading;
+    private TraderUpdateCallback mListener;
 
-    private Trader trader;
+    private Trader mTrader;
 
     public ClientBot(TraderUpdateCallback listener) {
-        this.listener = listener;
+        this.mListener = listener;
     }
 
 
@@ -32,20 +32,20 @@ public class ClientBot extends Client implements Runnable{
     public void run() {
         try {
             connectToServer();
-            trader = new Trader();
-            listener.onConnected(true);
+            mTrader = new Trader();
+            mListener.onConnected(true);
         } catch (IOException e) {
             e.printStackTrace();
-            listener.onConnected(false);
+            mListener.onConnected(false);
             return;
         }
         try{
-            clientTrading = new ClientTrading(this);
+            mClientTrading = new ClientTrading(this);
 
             startBotTrading(10);
 
-            if (listener != null){
-                listener.onTradingFinish(trader);
+            if (mListener != null){
+                mListener.onTradingFinish(mTrader);
             }
 
         } catch (IOException | InterruptedException e) {
@@ -53,7 +53,7 @@ public class ClientBot extends Client implements Runnable{
         } finally {
             try {
                 closeConnection();
-                Log.i(TAG, "run: client socket closed");
+                Log.i(TAG, "run: client mSocket closed");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -61,16 +61,16 @@ public class ClientBot extends Client implements Runnable{
     }
 
     public void setTraderUpdateListener(TraderUpdateCallback listener){
-        this.listener = listener;
+        this.mListener = listener;
     }
 
 
     /**
-     * notify listener that trader data changed
+     * notify mListener that mTrader data changed
      */
     private void notifyTraderUpdate(){
-        if (listener != null)
-            listener.onTraderUpdate(trader);
+        if (mListener != null)
+            mListener.onTraderUpdate(mTrader);
     }
 
 
@@ -85,7 +85,7 @@ public class ClientBot extends Client implements Runnable{
         try {
             for (int i = 0; i < dealsCount; i++) {
 
-                Map<ProductType, Integer> products =  clientTrading.getProductsFromServer();
+                Map<ProductType, Integer> products =  mClientTrading.getProductsFromServer();
 
                 ProductType cheapestProduct = null;
                 //profit on buying
@@ -98,25 +98,25 @@ public class ClientBot extends Client implements Runnable{
                 }
 
                 //buy cheapest good if has money
-                if (trader.getMoney() >= products.get(cheapestProduct) && i < 7) {
-                    clientTrading.buyProduct(trader, cheapestProduct);
-                    Log.i(TAG, "startBotTrading: Bot buy product; remaining money - " + trader.getMoney());
+                if (mTrader.getMoney() >= products.get(cheapestProduct) && i < 7) {
+                    mClientTrading.buyProduct(mTrader, cheapestProduct);
+                    Log.i(TAG, "startBotTrading: Bot buy product; remaining money - " + mTrader.getMoney());
                     notifyTraderUpdate();
                 }
                 //else sell the most expensive
                 else {
                     ProductType expensiveProduct = null;
                     //profit on buying
-                    for (Map.Entry<ProductType, Integer> entry : trader.getProducts().entrySet()) {
+                    for (Map.Entry<ProductType, Integer> entry : mTrader.getProducts().entrySet()) {
 
                         if (expensiveProduct == null || products.get(entry.getKey()) > products.get(expensiveProduct)) {
                             expensiveProduct = entry.getKey();
                         }
 
                     }
-                    clientTrading.sellProduct(trader, expensiveProduct);
+                    mClientTrading.sellProduct(mTrader, expensiveProduct);
                     Log.i(TAG, "startBotTrading: Bot sell product for " + products.get(expensiveProduct)
-                            + ". Money: " + trader.getMoney());
+                            + ". Money: " + mTrader.getMoney());
                     notifyTraderUpdate();
                 }
 
@@ -125,14 +125,14 @@ public class ClientBot extends Client implements Runnable{
 
         }
         finally {
-            clientTrading.finishConnection();
-            Log.i(TAG, "startBotTrading: Bot stop trading with money: " + trader.getMoney());
+            mClientTrading.finishConnection();
+            Log.i(TAG, "startBotTrading: Bot stop trading with money: " + mTrader.getMoney());
         }
 
     }
 
     /**
-     * implement this to know about trader bots updates
+     * implement this to know about mTrader bots updates
      */
     public interface TraderUpdateCallback {
         void onConnected(boolean isSuccess);
