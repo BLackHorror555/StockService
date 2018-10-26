@@ -1,4 +1,4 @@
-package com.example.dmitron.stockservice.servermanaging;
+package com.example.dmitron.stockservice.server_managing;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -15,18 +15,22 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.dmitron.stockservice.R;
-import com.example.dmitron.stockservice.servermanaging.data.stock.ProductType;
+import com.example.dmitron.stockservice.server_managing.data.stock.ProductType;
 import com.example.dmitron.stockservice.utils.GraphHelper;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.LegendRenderer;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Locale;
-import java.util.Map;
 
 public class ServerManagingFragment extends Fragment implements View.OnClickListener, ServerManagingContract.View {
 
@@ -80,6 +84,7 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
         mStartServiceButton.setOnClickListener(this);
         mStopServiceButton.setOnClickListener(this);
 
+        mPresenter.viewCreated();
         return root;
     }
 
@@ -198,9 +203,11 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
     }
 
     @Override
-    public void updateProductsInfo(Map<ProductType, Integer> products) {
-        for (ProductType productType : products.keySet()){
-            String product = productType.name();
+    public void updateProductsInfo(JSONObject products) throws JSONException {
+        mProductsAdapter.clear();
+        for (Iterator<String> it = products.keys(); it.hasNext(); ) {
+
+            String product = it.next();
             if (!mSeriesMap.containsKey(product)) {
 
                 mSeriesMap.put(product, GraphHelper.newLineGraphSeries(product));
@@ -208,12 +215,13 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
             }
 
             //update series
-            DataPoint newPoint = new DataPoint(mLastX, products.get(product));
+            DataPoint newPoint = new DataPoint(mLastX, products.getInt(product));
             mSeriesMap.get(product).appendData(newPoint, true, 20);
             mLastX++;
 
             //update products list view
             mProductsAdapter.add(product + ", price - " + products.get(product));
+
         }
     }
 
@@ -232,5 +240,10 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
         mGraph.removeAllSeries();
         if (mSeriesMap.containsKey(productType.name()))
             mGraph.addSeries(mSeriesMap.get(productType.name()));
+    }
+
+    @Override
+    public void showToastMessage(String msg) {
+        Toast.makeText(getActivity(), msg, Toast.LENGTH_SHORT).show();
     }
 }

@@ -1,8 +1,11 @@
-package com.example.dmitron.stockservice.client;
+package com.example.dmitron.stockservice.client.managed_client;
 
 import android.os.AsyncTask;
 
-import com.example.dmitron.stockservice.servermanaging.data.stock.ProductType;
+import com.example.dmitron.stockservice.client.Client;
+import com.example.dmitron.stockservice.client.ClientTrading;
+import com.example.dmitron.stockservice.client.Trader;
+import com.example.dmitron.stockservice.server_managing.data.stock.ProductType;
 
 import java.io.IOException;
 

@@ -1,4 +1,4 @@
-package com.example.dmitron.stockservice.client;
+package com.example.dmitron.stockservice.client.client_bot_monitoring;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;

@@ -2,8 +2,8 @@ package com.example.dmitron.stockservice.client;
 
 import android.util.Log;
 
-import com.example.dmitron.stockservice.servermanaging.server.RequestType;
-import com.example.dmitron.stockservice.servermanaging.data.stock.ProductType;
+import com.example.dmitron.stockservice.server_managing.server.RequestType;
+import com.example.dmitron.stockservice.server_managing.data.stock.ProductType;
 
 import org.json.JSONException;
 import org.json.JSONObject;

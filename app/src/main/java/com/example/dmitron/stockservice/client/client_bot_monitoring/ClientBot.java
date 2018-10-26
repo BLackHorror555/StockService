@@ -1,8 +1,11 @@
-package com.example.dmitron.stockservice.client;
+package com.example.dmitron.stockservice.client.client_bot_monitoring;
 
 import android.util.Log;
 
-import com.example.dmitron.stockservice.servermanaging.data.stock.ProductType;
+import com.example.dmitron.stockservice.client.Client;
+import com.example.dmitron.stockservice.client.ClientTrading;
+import com.example.dmitron.stockservice.client.Trader;
+import com.example.dmitron.stockservice.server_managing.data.stock.ProductType;
 
 import java.io.IOException;
 import java.util.Map;
@@ -45,7 +48,7 @@ public class ClientBot extends Client implements Runnable{
             startBotTrading(10);
 
             if (mListener != null){
-                mListener.onTradingFinish(mTrader);
+                mListener.onTraderFinish(mTrader);
             }
 
         } catch (IOException | InterruptedException e) {
@@ -137,7 +140,7 @@ public class ClientBot extends Client implements Runnable{
     public interface TraderUpdateCallback {
         void onConnected(boolean isSuccess);
         void onTraderUpdate(Trader trader);
-        void onTradingFinish(Trader trader);
+        void onTraderFinish(Trader trader);
     }
 
 }

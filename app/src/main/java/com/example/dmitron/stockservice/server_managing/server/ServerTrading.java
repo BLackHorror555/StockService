@@ -1,13 +1,10 @@
-package com.example.dmitron.stockservice.servermanaging.server;
+package com.example.dmitron.stockservice.server_managing.server;
 
 import android.content.Context;
-import android.content.Intent;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import com.example.dmitron.stockservice.R;
-import com.example.dmitron.stockservice.servermanaging.data.stock.ProductType;
-import com.example.dmitron.stockservice.servermanaging.data.stock.StockManager;
+import com.example.dmitron.stockservice.server_managing.data.stock.ProductType;
+import com.example.dmitron.stockservice.server_managing.data.stock.StockManager;
 
 import org.json.JSONObject;
 
@@ -22,47 +19,30 @@ import java.net.Socket;
 public class ServerTrading {
     private static final String TAG = "ServerTrading";
 
-    private DataInputStream dataIn;
-    private DataOutputStream dataOut;
+    private DataInputStream mDataIn;
+    private DataOutputStream mDataOut;
 
-    private Socket socket;
-    private static Context context;
+    private Socket mSocket;
 
-    private static StockManager sm;
+    private static StockManager sStockManager;
 
     ServerTrading(Socket socket, Context context) {
-        this.socket = socket;
-        ServerTrading.context = context;
+        this.mSocket = socket;
 
-        if (sm == null)
-            sm = StockManager.getInstance();
-
-        sendBroadcastUpdateProducts(context);
+        if (sStockManager == null)
+            sStockManager = StockManager.getInstance();
 
     }
 
-    /**
-     * Send JSON string to mainActivity throw broadcast
-     */
-    public static void sendBroadcastUpdateProducts(Context context) {
-        if (sm == null)
-            sm = StockManager.getInstance();
-
-        Intent local = new Intent();
-        local.setAction(context.getString(R.string.update_products_action));
-        local.putExtra(context.getString(R.string.products_extra), sm.createJson().toString());
-
-        LocalBroadcastManager.getInstance(context).sendBroadcast(local);
-    }
 
     /**
-     * initialised input and output socket streams
+     * initialised input and output mSocket streams
      * @throws IOException initialisation error
      */
     public void initStreams() throws IOException {
-        if (socket != null) {
-            dataIn = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-            dataOut = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+        if (mSocket != null) {
+            mDataIn = new DataInputStream(new BufferedInputStream(mSocket.getInputStream()));
+            mDataOut = new DataOutputStream(new BufferedOutputStream(mSocket.getOutputStream()));
         }
     }
 
@@ -73,7 +53,7 @@ public class ServerTrading {
      * 2 & 3 - message length
      * "message length" - message
      *
-     * @throws IOException          socket read/write exceptions
+     * @throws IOException          mSocket read/write exceptions
      * @throws InterruptedException while waiting for input bytes
      */
     public void start() throws IOException, InterruptedException {
@@ -83,18 +63,18 @@ public class ServerTrading {
         while (isRespond) {
 
 
-            //wait until dataIn stream available 3 bytes (1 - request type, 2 - length)
-            while (dataIn.available() < 3)
+            //wait until mDataIn stream available 3 bytes (1 - request type, 2 - length)
+            while (mDataIn.available() < 3)
                 Thread.sleep(50);
 
             Log.i(TAG, "start: new request has been discovered");
 
-            RequestType requestType = RequestType.values()[dataIn.readByte()];
-            short messageLength = dataIn.readShort();
+            RequestType requestType = RequestType.values()[mDataIn.readByte()];
+            short messageLength = mDataIn.readShort();
 
-            //wait until dataIn stream available "length" bytes
+            //wait until mDataIn stream available "length" bytes
             while (true) {
-                if (dataIn.available() >= messageLength)
+                if (mDataIn.available() >= messageLength)
                     break;
             }
             //response to request
@@ -105,12 +85,12 @@ public class ServerTrading {
                     break;
                 case BUYING:
                     Log.i(TAG, "start: RECEIVED NEW BUYING REQUEST!");
-                    ProductType productType = ProductType.values()[dataIn.readByte()];
+                    ProductType productType = ProductType.values()[mDataIn.readByte()];
                     sendBuyingConfirm(productType);
                     break;
                 case SELLING:
                     Log.i(TAG, "start: RECEIVED NEW SELLING REQUEST!");
-                    ProductType sellingProduct = ProductType.values()[dataIn.readByte()];
+                    ProductType sellingProduct = ProductType.values()[mDataIn.readByte()];
                     sendSellingConfirm(sellingProduct);
                     break;
                 case CLOSE_CONNECTION:
@@ -130,15 +110,13 @@ public class ServerTrading {
      */
     private void sendBuyingConfirm(ProductType productType) throws IOException {
 
-        int buyingResult = sm.buyProduct(productType);
+        int buyingResult = sStockManager.buyProduct(productType);
         if (buyingResult == -1)
-            dataOut.writeByte(RequestType.OPERATION_PROHIBITED.ordinal());
+            mDataOut.writeByte(RequestType.OPERATION_PROHIBITED.ordinal());
         else {
-            sendBroadcastUpdateProducts(context);
-
-            dataOut.writeByte(RequestType.OPERATION_ACCEPTED.ordinal());
-            dataOut.writeInt(buyingResult);
-            dataOut.flush();
+            mDataOut.writeByte(RequestType.OPERATION_ACCEPTED.ordinal());
+            mDataOut.writeInt(buyingResult);
+            mDataOut.flush();
         }
     }
 
@@ -146,15 +124,14 @@ public class ServerTrading {
      * send to client selling confirmation and sold item price
      *
      * @param productType type of product need to confirm
-     * @throws IOException write to socket
+     * @throws IOException write to mSocket
      */
     private void sendSellingConfirm(ProductType productType) throws IOException {
 
-        int sellingPrice = sm.sellProduct(productType);
-        sendBroadcastUpdateProducts(context);
-        dataOut.writeByte(RequestType.OPERATION_ACCEPTED.ordinal());
-        dataOut.writeInt(sellingPrice);
-        dataOut.flush();
+        int sellingPrice = sStockManager.sellProduct(productType);
+        mDataOut.writeByte(RequestType.OPERATION_ACCEPTED.ordinal());
+        mDataOut.writeInt(sellingPrice);
+        mDataOut.flush();
     }
 
     /**
@@ -164,16 +141,16 @@ public class ServerTrading {
     private void sendProductInfo() throws IOException {
 
         JSONObject jsonObject;
-        jsonObject = sm.createJson();
+        jsonObject = sStockManager.createJson();
 
         //sending json
-        dataOut.writeByte(RequestType.PRODUCT_INFO.ordinal());
+        mDataOut.writeByte(RequestType.PRODUCT_INFO.ordinal());
         int length = jsonObject.toString().getBytes().length;
-        dataOut.writeShort(length);
+        mDataOut.writeShort(length);
         Log.i(TAG, "sendProductInfo: message product info consist of " + length);
 
-        dataOut.writeBytes(jsonObject.toString());
+        mDataOut.writeBytes(jsonObject.toString());
 
-        dataOut.flush();
+        mDataOut.flush();
     }
 }

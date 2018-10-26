@@ -1,4 +1,4 @@
-package com.example.dmitron.stockservice.servermanaging.server;
+package com.example.dmitron.stockservice.server_managing.server;
 
 /**
  * Type of message that client and server send

@@ -11,15 +11,15 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 
-import com.example.dmitron.stockservice.client.ClientMonitoringFragment;
-import com.example.dmitron.stockservice.client.ManagedTraderFragment;
-import com.example.dmitron.stockservice.servermanaging.ServerManagingFragment;
+import com.example.dmitron.stockservice.client.client_bot_monitoring.ClientBotManagingFragment;
+import com.example.dmitron.stockservice.client.managed_client.ManagedTraderFragment;
+import com.example.dmitron.stockservice.server_managing.ServerManagingFragment;
 
 public class MainActivity extends AppCompatActivity {
 
     private DrawerLayout drawerLayout;
     private ServerManagingFragment serverManagingFragment;
-    private ClientMonitoringFragment clientMonitoringFragment;
+    private ClientBotManagingFragment mClientBotManagingFragment;
     private ManagedTraderFragment managedTraderFragment;
 
 
@@ -37,14 +37,14 @@ public class MainActivity extends AppCompatActivity {
                 return;
 
             serverManagingFragment = new ServerManagingFragment();
-            clientMonitoringFragment = new ClientMonitoringFragment();
+            mClientBotManagingFragment = new ClientBotManagingFragment();
             managedTraderFragment = new ManagedTraderFragment();
 
             getSupportFragmentManager().beginTransaction()
                     .add(R.id.fragment_container, serverManagingFragment)
-                    .add(R.id.fragment_container, clientMonitoringFragment)
+                    .add(R.id.fragment_container, mClientBotManagingFragment)
                     .add(R.id.fragment_container, managedTraderFragment)
-                    .hide(clientMonitoringFragment)
+                    .hide(mClientBotManagingFragment)
                     .hide(managedTraderFragment)
                     .commit();
         }
@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
                         showFragment(serverManagingFragment);
                         break;
                     case R.id.clients_monitoring:
-                        showFragment(clientMonitoringFragment);
+                        showFragment(mClientBotManagingFragment);
                         break;
                     case R.id.managed_trader:
                         showFragment(managedTraderFragment);

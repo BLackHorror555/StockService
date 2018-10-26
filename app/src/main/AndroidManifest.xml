@@ -22,7 +22,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".servermanaging.server.StockService" />
+        <service android:name=".server_managing.server.StockService" />
     </application>
 
 </manifest>

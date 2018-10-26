@@ -1,18 +1,21 @@
-package com.example.dmitron.stockservice.servermanaging.data.stock;
+package com.example.dmitron.stockservice.server_managing.data.stock;
 
 import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 public class StockManager {
     private static final String TAG = "StockManager";
     private static StockManager sStockManager;
+    private ArrayList<StockChangesListener> mListeners;
 
     private StockManager() {
         mStock = new Stock();
+        mListeners = new ArrayList<>();
     }
 
     private final Stock mStock;
@@ -45,10 +48,25 @@ public class StockManager {
                 }
 
             }
-
+            notifyListeners();
         }
         return buyingPrice;
     }
+
+    /**
+     * add new StockChangesListener
+     * @param stockChangesListener listener
+     */
+    public void addListener(StockChangesListener stockChangesListener){
+        mListeners.add(stockChangesListener);
+    }
+
+    private void notifyListeners(){
+        for (StockChangesListener listener : mListeners) {
+            listener.onProductsChanged();
+        }
+    }
+
 
     /**
      * Called when client want to sell product
@@ -73,6 +91,7 @@ public class StockManager {
             }
 
         }
+        notifyListeners();
         return sellingPrice;
 
     }
@@ -82,7 +101,7 @@ public class StockManager {
      * creates json object from mProducts with fields product name (string) and price (int)
      * @return json object
      */
-    public JSONObject createJson() {
+    public synchronized JSONObject createJson() {
         JSONObject jsonObject = new JSONObject();
         try {
             for (Map.Entry<ProductType, Product> entry : getStock().getProducts().entrySet()) {
@@ -104,7 +123,18 @@ public class StockManager {
         return sStockManager;
     }
 
+    /**
+     * get stock instance
+     * @return stock instance
+     */
     public Stock getStock() {
         return mStock;
+    }
+
+    /**
+     * implement to listen stock changes
+     */
+    public interface StockChangesListener {
+        void onProductsChanged();
     }
 }

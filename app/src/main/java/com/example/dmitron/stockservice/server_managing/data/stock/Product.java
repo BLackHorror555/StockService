@@ -1,4 +1,4 @@
-package com.example.dmitron.stockservice.servermanaging.data.stock;
+package com.example.dmitron.stockservice.server_managing.data.stock;
 
 import java.util.Random;
 

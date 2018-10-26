@@ -1,4 +1,4 @@
-package com.example.dmitron.stockservice.client;
+package com.example.dmitron.stockservice.client.managed_client;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -19,7 +19,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.dmitron.stockservice.R;
-import com.example.dmitron.stockservice.servermanaging.data.stock.ProductType;
+import com.example.dmitron.stockservice.client.Trader;
+import com.example.dmitron.stockservice.server_managing.data.stock.ProductType;
 
 import org.json.JSONException;
 import org.json.JSONObject;

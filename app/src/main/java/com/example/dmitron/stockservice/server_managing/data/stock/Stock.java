@@ -1,9 +1,9 @@
-package com.example.dmitron.stockservice.servermanaging.data.stock;
+package com.example.dmitron.stockservice.server_managing.data.stock;
 
 import java.util.EnumMap;
 import java.util.Map;
 
-public class Stock {
+class Stock {
 
     Map<ProductType, Product> mProducts = new EnumMap<ProductType, Product>(ProductType.class);
 
@@ -11,6 +11,9 @@ public class Stock {
         initStock();
     }
 
+    /**
+     * initialise stock with default products
+     */
     private void initStock() {
         for (ProductType type : ProductType.values()){
             Product product = new Product(type);
@@ -23,7 +26,7 @@ public class Stock {
      * @param type Enum type of product
      * @return  true - success, false - if not
      */
-    public boolean AddProduct(ProductType type){
+    boolean AddProduct(ProductType type){
         boolean result;
         if (mProducts.containsKey(type)){
             result = false;
@@ -35,11 +38,20 @@ public class Stock {
     }
 
 
-    public Map<ProductType, Product> getProducts() {
+    /**
+     * get products
+     * @return map of products (product type : product)
+     */
+    Map<ProductType, Product> getProducts() {
         return mProducts;
     }
 
-    public boolean deleteProduct(ProductType type){
+    /**
+     * delete product of specific type from stock
+     * @param type type of product
+     * @return success
+     */
+    boolean deleteProduct(ProductType type){
         return mProducts.remove(type) != null;
     }
 }

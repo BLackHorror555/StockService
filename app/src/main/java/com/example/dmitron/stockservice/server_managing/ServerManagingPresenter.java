@@ -1,24 +1,23 @@
-package com.example.dmitron.stockservice.servermanaging;
+package com.example.dmitron.stockservice.server_managing;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
 import android.support.v4.content.LocalBroadcastManager;
 
 import com.example.dmitron.stockservice.R;
-import com.example.dmitron.stockservice.servermanaging.data.LocalData;
-import com.example.dmitron.stockservice.servermanaging.data.LocalData.Changed;
-import com.example.dmitron.stockservice.servermanaging.data.stock.ProductType;
-import com.example.dmitron.stockservice.servermanaging.server.StockService;
+import com.example.dmitron.stockservice.server_managing.data.LocalData;
+import com.example.dmitron.stockservice.server_managing.data.LocalData.Changed;
+import com.example.dmitron.stockservice.server_managing.data.stock.ProductType;
+import com.example.dmitron.stockservice.server_managing.server.StockService;
+import com.example.dmitron.stockservice.utils.ActivityUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -27,7 +26,8 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
     private ServerManagingContract.View mView;
     private Context mContext;
 
-    private LocalData mLocalData = LocalData.getInstance();
+    private LocalData mLocalData;
+    private boolean isServiceWorks;
 
     private BroadcastReceiver mClientCountReceiver = new BroadcastReceiver() {
         @Override
@@ -41,13 +41,13 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
         public void onReceive(Context context, Intent intent) {
             try {
                 JSONObject jsonProducts = new JSONObject(intent.getStringExtra(context.getString(R.string.products_extra)));
-                Map<ProductType, Integer> products = new HashMap<>();
+                /*Map<ProductType, Integer> products = new HashMap<>();
 
                 for (Iterator<String> it = jsonProducts.keys(); it.hasNext(); ) {
                     String name = it.next();
                     products.put(ProductType.valueOf(name), jsonProducts.getInt(name));
-                }
-                mLocalData.setProducts(products);
+                }*/
+                mLocalData.setProducts(jsonProducts);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -59,8 +59,21 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
     ServerManagingPresenter(@NonNull ServerManagingContract.View view, Context context){
         this.mView = view;
         this.mContext = context;
+        mLocalData = LocalData.getInstance();
         view.setPresenter(this);
         registerReceivers();
+    }
+
+    private void restorePreviousSettings() {
+        SharedPreferences sharedPref =
+                mContext.getSharedPreferences(mContext.getString(R.string.preference_file_service_info), Context.MODE_PRIVATE);
+        try {
+            mLocalData.setProducts(new JSONObject(sharedPref.getString(mContext.getString(R.string.saved_products), "")));
+            mView.showToastMessage("Last service data restored");
+        } catch (JSONException e) {
+            e.printStackTrace();
+            mView.showToastMessage("Unable to restore data");
+        }
     }
 
 
@@ -77,6 +90,17 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
         filter = new IntentFilter();
         filter.addAction(mContext.getString(R.string.update_products_action));
         LocalBroadcastManager.getInstance(mContext).registerReceiver(mUpdateProductsReceiver, filter);
+    }
+
+    @Override
+    public void viewCreated() {
+        if (StockService.isWorking()) {
+            mView.setStartButtonEnabling(false);
+            mView.setStopButtonEnabling(true);
+
+            restorePreviousSettings();
+
+        }
     }
 
     void unregisterReceivers(){
@@ -96,6 +120,7 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
         mContext.startService(intent);
         mView.setStartButtonEnabling(false);
         mView.setStopButtonEnabling(true);
+        isServiceWorks = true;
     }
 
     @Override
@@ -103,6 +128,7 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
         mContext.stopService(new Intent(mContext, StockService.class));
         mView.setStartButtonEnabling(true);
         mView.setStopButtonEnabling(false);
+        isServiceWorks = false;
     }
 
     @Override
@@ -113,6 +139,10 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
     @Override
     public void detached() {
         unregisterReceivers();
+        SharedPreferences.Editor editor =
+                ActivityUtils.getSharedPrefEditor(mContext, mContext.getString(R.string.preference_file_service_info));
+        //editor.putBoolean(mContext.getString(R.string.saved_is_server_works), isServiceWorks).commit();
+        editor.putString(mContext.getString(R.string.saved_products), mLocalData.getProducts().toString()).commit();
     }
 
     @Override
@@ -121,7 +151,11 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
             mView.showConnectedClientsCount(mLocalData.getClientsCount());
         }
         else{
-            mView.updateProductsInfo(mLocalData.getProducts());
+            try {
+                mView.updateProductsInfo(mLocalData.getProducts());
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
