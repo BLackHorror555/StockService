@@ -8,17 +8,17 @@ import java.util.Observable;
 /**
  * local storage of server data to display on views
  */
-public class LocalData extends Observable implements Serializable {
+public class ServerManagingLocalData extends Observable implements Serializable {
 
     public enum Changed{
         CLIENT_COUNT, PRODUCTS, SERVICE_WORKS
     }
 
     private transient int mConnectedClients;
-    private static LocalData sInstance = new LocalData();
+    private static ServerManagingLocalData sInstance = new ServerManagingLocalData();
     private JSONObject mJsonProducts;
 
-    private LocalData(){
+    private ServerManagingLocalData(){
         mConnectedClients = 0;
     }
 
@@ -26,7 +26,7 @@ public class LocalData extends Observable implements Serializable {
      * return instance of local data
      * @return instance
      */
-    public static LocalData getInstance(){
+    public static ServerManagingLocalData getInstance(){
         return sInstance;
     }
 

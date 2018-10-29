@@ -1,14 +1,10 @@
 package com.example.dmitron.stockservice.client.managed_client;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,22 +15,18 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.dmitron.stockservice.R;
-import com.example.dmitron.stockservice.client.Trader;
 import com.example.dmitron.stockservice.server_managing.data.stock.ProductType;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 
-public class ManagedTraderFragment extends Fragment implements View.OnClickListener, ManagedTraderHelper.ManagedTraderCallback {
-
-    private BroadcastReceiver mUpdateStockProductReceiver;
+public class ManagedTraderFragment extends Fragment implements View.OnClickListener,
+        ManagedClientContract.View {
 
     private Button mCreateTraderButton;
     private Button mKillTraderButton;
+    private Button mConnectButton;
+    private Button mDisconnectButton;
     private TextView mMoneyView;
     private ListView mStockProductsListView;
     private ListView mTraderProductsListView;
@@ -42,13 +34,14 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
     private ArrayAdapter<String> mStockProductsAdapter;
     private ArrayAdapter<String> mTraderProductsAdapter;
 
-    private Trader mTrader;
-    private ManagedTraderHelper mManagedTraderHelper;
+    private ManagedClientContract.Presenter mPresenter;
+
+
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        setProductUpdateReceiver(context);
+        new ManagedClientPresenter(this, context);
     }
 
     @Override
@@ -67,11 +60,17 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
         mStockProductsListView = v.findViewById(R.id.stock_products_list);
         mTraderProductsListView = v.findViewById(R.id.trader_products_list_view);
         mKillTraderButton = v.findViewById(R.id.kill_trader_button);
+        mConnectButton = v.findViewById(R.id.connect_managed_client_button);
+        mDisconnectButton = v.findViewById(R.id.disconnect_managed_client_button);
 
         initViews();
 
         mCreateTraderButton.setOnClickListener(this);
         mKillTraderButton.setOnClickListener(this);
+        mConnectButton.setOnClickListener(this);
+        mDisconnectButton.setOnClickListener(this);
+
+        mPresenter.viewCreated();
         return v;
     }
 
@@ -85,9 +84,7 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
         mStockProductsListView.setOnItemClickListener((parent, view, position, id) -> {
 
             String productName = ((String) parent.getItemAtPosition(position)).split(",")[0];
-            ProductType productType = ProductType.valueOf(productName);
-
-            mManagedTraderHelper.new BuyingTask(productType).execute();
+            mPresenter.stockProductTapped(ProductType.valueOf(productName));
         });
 
         mTraderProductsAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1);
@@ -96,134 +93,95 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
         mTraderProductsListView.setOnItemClickListener((parent, view, position, id) -> {
 
             String productName = ((String) parent.getItemAtPosition(position)).split(",")[0];
-            ProductType productType = ProductType.valueOf(productName);
-            mManagedTraderHelper.new SellingTask(productType).execute();
+            mPresenter.traderProductTapped(ProductType.valueOf(productName));
         });
     }
 
-    /**
-     * update adapter and money view with changed mTrader data
-     */
-    private void updateTraderInfoOnUi() {
-        Map<ProductType, Integer> products = mTrader.getProducts();
-        mTraderProductsAdapter.clear();
 
-        for (ProductType productType : products.keySet()) {
-            mTraderProductsAdapter.add(productType.name() + ", amount - " + products.get(productType));
-        }
-
-        mMoneyView.setText(String.format(Locale.getDefault(), "%d", mTrader.getMoney()));
-    }
-
-
-    /**
-     * receive info about products from server through broadcast (ugly hack in case of dividing client and server apps)
-     *
-     * @param context activity context
-     */
-    private void setProductUpdateReceiver(Context context) {
-        IntentFilter filter = new IntentFilter();
-
-        filter.addAction(getString(R.string.update_products_action));
-
-        mUpdateStockProductReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-
-                try {
-                    JSONObject jsonProducts = new JSONObject(intent.getStringExtra("products"));
-                    updateProductsInfo(jsonProducts);
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        };
-        LocalBroadcastManager.getInstance(context).registerReceiver(mUpdateStockProductReceiver, filter);
-    }
-
-    /**
-     * update list view adapter with new data
-     * @param jsonProducts new products
-     * @throws JSONException json read error
-     */
-    private void updateProductsInfo(JSONObject jsonProducts) throws JSONException {
-        Iterator<String> iterator = jsonProducts.keys();
-        mStockProductsAdapter.clear();
-
-        while (iterator.hasNext()) {
-            String product = iterator.next();
-            mStockProductsAdapter.add(product + ", price - " + jsonProducts.getInt(product));
-        }
-    }
 
     @Override
     public void onDetach() {
         super.onDetach();
-        LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mUpdateStockProductReceiver);
     }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.create_trader_button:
-                createManagedTrader();
+                mPresenter.createManagedClient();
                 break;
-
             case R.id.kill_trader_button:
-                mManagedTraderHelper.new FinishConnectionTask().execute();
+                mPresenter.killManagedClient();
+                break;
+            case R.id.connect_managed_client_button:
+                mPresenter.connect();
+                break;
+            case R.id.disconnect_managed_client_button:
+                mPresenter.disconnect();
                 break;
         }
     }
 
-    /**
-     * create new managed mTrader and connect to server
-     * is success return in callback
-     */
-    private void createManagedTrader() {
-        mTrader = new Trader();
 
-        mManagedTraderHelper = new ManagedTraderHelper(this, mTrader);
-        mManagedTraderHelper.new ConnectToServerTask().execute();
-
+    @Override
+    public void setPresenter(ManagedClientContract.Presenter presenter) {
+        mPresenter = presenter;
     }
 
     @Override
-    public void onBuyingCompleted(boolean success) {
-        if (!success)
-            Toast.makeText(getActivity(), "Not enough money!", Toast.LENGTH_SHORT).show();
-        else
-            updateTraderInfoOnUi();
+    public void setCreateTraderButtonEnabled(boolean isEnable) {
+        mCreateTraderButton.setEnabled(isEnable);
     }
 
     @Override
-    public void onSellingCompleted(boolean success) {
-        if (!success)
-            Toast.makeText(getActivity(), "No such product", Toast.LENGTH_SHORT).show();
-        else
-            updateTraderInfoOnUi();
-
+    public void setKillTraderButtonEnabled(boolean isEnable) {
+        mKillTraderButton.setEnabled(isEnable);
     }
 
     @Override
-    public void onConnectionTaskComplete(boolean success) {
-        if (!success) {
-            Toast.makeText(getActivity(), "Connection failed", Toast.LENGTH_SHORT).show();
-
-        } else {
-            updateTraderInfoOnUi();
-            mCreateTraderButton.setEnabled(false);
-            mKillTraderButton.setEnabled(true);
-        }
-
+    public void setConnectButtonEnabled(boolean isEnable) {
+        mConnectButton.setEnabled(isEnable);
     }
 
     @Override
-    public void onConnectionFinishTaskComplete() {
+    public void setDisconnectButtonEnabled(boolean isEnable) {
+        mDisconnectButton.setEnabled(isEnable);
+    }
+
+    @Override
+    public void showClientMoney(int money) {
+        mMoneyView.setText(String.format(Locale.getDefault(), "%d", money));
+    }
+
+    @Override
+    public void showClientProducts(Map<ProductType, Integer> products) {
+
         mTraderProductsAdapter.clear();
-        mKillTraderButton.setEnabled(false);
-        mMoneyView.setText("");
-        mCreateTraderButton.setEnabled(true);
+        if (products == null) return;
+        for (ProductType productType : products.keySet()) {
+            mTraderProductsAdapter.add(productType.name() + ", amount - " + products.get(productType));
+        }
+    }
+
+    @Override
+    public void showStockProducts(Map<ProductType, Integer> products) {
+
+        mStockProductsAdapter.clear();
+        if (products == null) return;
+        for (ProductType type : products.keySet()){
+
+            mStockProductsAdapter.add( type.name() + ", price - " + products.get(type));
+        }
+    }
+
+    @Override
+    public void showToastMessage(String message) {
+        Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void cleanTraderInfo() {
+        showClientProducts(null);
+        showClientMoney(0);
     }
 }

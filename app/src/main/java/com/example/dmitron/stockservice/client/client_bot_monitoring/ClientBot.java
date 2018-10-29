@@ -88,7 +88,7 @@ public class ClientBot extends Client implements Runnable{
         try {
             for (int i = 0; i < dealsCount; i++) {
 
-                Map<ProductType, Integer> products =  mClientTrading.getProductsFromServer();
+                Map<ProductType, Integer> products =  mClientTrading.getMapProductsFromServer();
 
                 ProductType cheapestProduct = null;
                 //profit on buying

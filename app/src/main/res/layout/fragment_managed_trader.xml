@@ -11,7 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="45dp"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="516dp"
         android:layout_weight="1"
@@ -19,23 +19,23 @@
         android:text="Create your own trader!"
         app:layout_constraintBottom_toBottomOf="@+id/graph"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.187"
+        app:layout_constraintHorizontal_bias="0.038"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/textView3"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="28dp"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="44dp"
+        android:layout_marginTop="12dp"
         android:layout_marginEnd="8dp"
         android:text="Your money:"
         android:textSize="20sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/create_trader_button" />
+        app:layout_constraintTop_toBottomOf="@+id/kill_trader_button" />
 
     <TextView
         android:id="@+id/trader_money_view"
@@ -95,14 +95,12 @@
         android:id="@+id/kill_trader_button"
         android:layout_width="109dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="8dp"
+        android:layout_marginTop="8dp"
         android:enabled="false"
         android:text="kill trader"
-        app:layout_constraintBottom_toBottomOf="@+id/create_trader_button"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/create_trader_button"
-        app:layout_constraintTop_toTopOf="@+id/create_trader_button" />
+        app:layout_constraintEnd_toEndOf="@+id/create_trader_button"
+        app:layout_constraintStart_toStartOf="@+id/create_trader_button"
+        app:layout_constraintTop_toBottomOf="@+id/create_trader_button" />
 
     <ListView
         android:id="@+id/stock_products_list"
@@ -129,4 +127,28 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView5" />
+
+    <Button
+        android:id="@+id/connect_managed_client_button"
+        android:layout_width="164dp"
+        android:layout_height="49dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:text="connect to server"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.714"
+        app:layout_constraintStart_toEndOf="@+id/create_trader_button"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/disconnect_managed_client_button"
+        android:layout_width="wrap_content"
+        android:layout_height="47dp"
+        android:layout_marginTop="8dp"
+        android:enabled="false"
+        android:text="Disconnect"
+        app:layout_constraintEnd_toEndOf="@+id/connect_managed_client_button"
+        app:layout_constraintStart_toStartOf="@+id/connect_managed_client_button"
+        app:layout_constraintTop_toBottomOf="@+id/connect_managed_client_button" />
 </android.support.constraint.ConstraintLayout>

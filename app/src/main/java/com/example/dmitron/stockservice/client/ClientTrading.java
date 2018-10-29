@@ -40,7 +40,6 @@ public class ClientTrading {
     }
 
 
-
     /**
      * send to server and activity message that client finished communication
      */
@@ -57,9 +56,36 @@ public class ClientTrading {
 
 
     /**
-     * Update map products by request to server and receiving data
+     * does request to server to get products
+     *
+     * @return map of products (type : cost) or null if error
      */
-    public Map<ProductType, Integer> getProductsFromServer() {
+    public Map<ProductType, Integer> getMapProductsFromServer() {
+
+        try {
+            mOut.writeByte(RequestType.PRODUCT_INFO.ordinal());
+            mOut.writeShort(0);
+            mOut.flush();
+
+
+            Map<ProductType, Integer> products = new EnumMap<>(ProductType.class);
+            JSONObject jsonObject = receiveProductInfo();
+            Iterator<String> iterator = jsonObject.keys();
+            while (iterator.hasNext()) {
+                String key = iterator.next();
+                products.put(ProductType.valueOf(key), jsonObject.getInt(key));
+            }
+
+            return products;
+
+        } catch (JSONException | IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+    }
+
+    public JSONObject getJsonProductsFromServer() {
         try {
             mOut.writeByte(RequestType.PRODUCT_INFO.ordinal());
             mOut.writeShort(0);
@@ -72,14 +98,17 @@ public class ClientTrading {
 
     /**
      * receive json with products from server
+     *
      * @return
      */
-    private Map<ProductType, Integer> receiveProductInfo() {
-        Map<ProductType, Integer> products = new EnumMap<>(ProductType.class);
+    private JSONObject receiveProductInfo() {
+
+        JSONObject jsonObject;
         try {
             //wait until dataIn stream available 3 bytes (1 - request type, 2 - length)
-            while (mIn.available() < 3)
+            while (mIn.available() < 3) {
                 Thread.sleep(50);
+            }
 
             RequestType requestType = RequestType.values()[mIn.readByte()];
             short messageLength = mIn.readShort();
@@ -94,18 +123,15 @@ public class ClientTrading {
             mIn.read(bytes, 0, messageLength);
             String jsonString = new String(bytes);
 
-            JSONObject jsonObject = new JSONObject(jsonString);
+            jsonObject = new JSONObject(jsonString);
 
-            Iterator<String> iterator = jsonObject.keys();
-            while (iterator.hasNext()) {
-                String key = iterator.next();
-                products.put(ProductType.valueOf(key), jsonObject.getInt(key));
-            }
+
+            return jsonObject;
 
         } catch (IOException | JSONException | InterruptedException e) {
             e.printStackTrace();
+            return null;
         }
-        return products;
     }
 
 
@@ -118,7 +144,8 @@ public class ClientTrading {
     public boolean buyProduct(Trader trader, ProductType productType) {
         boolean success = false;
         try {
-            if (getProductsFromServer().get(productType) > trader.getMoney())
+            Map<ProductType, Integer> products = getMapProductsFromServer();
+            if (products == null || products.get(productType) > trader.getMoney())
                 return false;
 
             mOut.writeByte(RequestType.BUYING.ordinal());
@@ -126,7 +153,7 @@ public class ClientTrading {
             mOut.writeByte(productType.ordinal());
             mOut.flush();
             int spendMoney = receiveBuyingConfirm();
-            if (spendMoney != -1){
+            if (spendMoney != -1) {
                 trader.spendMoney(spendMoney);
                 trader.addProduct(productType);
                 success = true;
@@ -187,9 +214,10 @@ public class ClientTrading {
 
     /**
      * do purchase on server and return purchase price or -1 if buying prohibited
+     *
      * @return -1 if buying prohibited, otherwise price
      * @throws InterruptedException while waiting for available mIn
-     * @throws IOException  error reading from input stream
+     * @throws IOException          error reading from input stream
      */
     private int receiveBuyingConfirm() throws InterruptedException, IOException {
         int price = -1;
@@ -197,7 +225,7 @@ public class ClientTrading {
             Thread.sleep(50);
         RequestType requestType = RequestType.values()[mIn.readByte()];
 
-        if (requestType == RequestType.OPERATION_ACCEPTED){
+        if (requestType == RequestType.OPERATION_ACCEPTED) {
             while (mIn.available() < 4)
                 Thread.sleep(50);
             price = mIn.readInt();

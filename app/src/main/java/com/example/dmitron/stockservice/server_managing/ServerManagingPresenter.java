@@ -9,8 +9,8 @@ import android.support.annotation.NonNull;
 import android.support.v4.content.LocalBroadcastManager;
 
 import com.example.dmitron.stockservice.R;
-import com.example.dmitron.stockservice.server_managing.data.LocalData;
-import com.example.dmitron.stockservice.server_managing.data.LocalData.Changed;
+import com.example.dmitron.stockservice.server_managing.data.ServerManagingLocalData;
+import com.example.dmitron.stockservice.server_managing.data.ServerManagingLocalData.Changed;
 import com.example.dmitron.stockservice.server_managing.data.stock.ProductType;
 import com.example.dmitron.stockservice.server_managing.server.StockService;
 import com.example.dmitron.stockservice.utils.ActivityUtils;
@@ -26,7 +26,7 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
     private ServerManagingContract.View mView;
     private Context mContext;
 
-    private LocalData mLocalData;
+    private ServerManagingLocalData mLocalData;
     private boolean isServiceWorks;
 
     private BroadcastReceiver mClientCountReceiver = new BroadcastReceiver() {
@@ -59,7 +59,7 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
     ServerManagingPresenter(@NonNull ServerManagingContract.View view, Context context){
         this.mView = view;
         this.mContext = context;
-        mLocalData = LocalData.getInstance();
+        mLocalData = ServerManagingLocalData.getInstance();
         view.setPresenter(this);
         registerReceivers();
     }
