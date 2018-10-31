@@ -7,18 +7,42 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Random;
 
 public class StockManager {
     private static final String TAG = "StockManager";
     private static StockManager sStockManager;
+    private final Stock mStock;
     private ArrayList<StockChangesListener> mListeners;
+    private Random mRnd;
 
     private StockManager() {
         mStock = new Stock();
         mListeners = new ArrayList<>();
+        mRnd = new Random();
     }
 
-    private final Stock mStock;
+    public static StockManager getInstance() {
+        if (sStockManager == null) {
+            sStockManager = new StockManager();
+        }
+        return sStockManager;
+    }
+
+    /**
+     * add new StockChangesListener
+     *
+     * @param stockChangesListener listener
+     */
+    public void addListener(StockChangesListener stockChangesListener) {
+        mListeners.add(stockChangesListener);
+    }
+
+    private void notifyListeners() {
+        for (StockChangesListener listener : mListeners) {
+            listener.onProductsChanged();
+        }
+    }
 
     /**
      * Called when client want to buy product
@@ -27,46 +51,29 @@ public class StockManager {
      *
      * @param type Enum product type
      * @return -1 if failed
-     *          selling price if success
+     * selling price if success
      */
-    public synchronized int buyProduct(ProductType type) {
-        int buyingPrice;
+    public synchronized int buyProduct(ProductType type, int money) {
+        int price;
         Product buyingProduct = mStock.mProducts.get(type);
-        if (!mStock.mProducts.containsKey(type))
-            buyingPrice = -1;
-        else {
-            buyingPrice = buyingProduct.getPrice();
+        if (!mStock.mProducts.containsKey(type) || buyingProduct.getPrice() > money) {
+            price = -1;
+        } else {
+            price = buyingProduct.getPrice();
             for (ProductType productType : ProductType.values()) {
-                if (productType == type){
-                    buyingProduct.increaseInterest(2);
-                    buyingProduct.increasePrice(5);
-                    Log.i(TAG, "buyProduct: product " + type.name() + "was bought");
+                if (productType == type) {
+                    buyingProduct.increaseInterest(mRnd.nextInt(3) + 1);
+                    buyingProduct.increasePrice(mRnd.nextInt(7) + 4);
+                    Log.i(TAG, "buyProduct: product " + type.name() + " was bought");
+                } else {
+                    mStock.mProducts.get(productType).decreaseInterest(mRnd.nextInt(2) + 1);
+                    mStock.mProducts.get(productType).decreasePrice(mRnd.nextInt(4) + 1);
                 }
-                else{
-                    mStock.mProducts.get(productType).decreaseInterest(1);
-                    mStock.mProducts.get(productType).decreasePrice(3);
-                }
-
             }
             notifyListeners();
         }
-        return buyingPrice;
+        return price;
     }
-
-    /**
-     * add new StockChangesListener
-     * @param stockChangesListener listener
-     */
-    public void addListener(StockChangesListener stockChangesListener){
-        mListeners.add(stockChangesListener);
-    }
-
-    private void notifyListeners(){
-        for (StockChangesListener listener : mListeners) {
-            listener.onProductsChanged();
-        }
-    }
-
 
     /**
      * Called when client want to sell product
@@ -80,12 +87,11 @@ public class StockManager {
         Product buyingProduct = mStock.mProducts.get(type);
         int sellingPrice = buyingProduct.getPrice();
         for (ProductType productType : ProductType.values()) {
-            if (productType == type){
+            if (productType == type) {
                 buyingProduct.decreaseInterest(2);
                 buyingProduct.decreasePrice(5);
                 Log.i(TAG, "buyProduct: product " + type.name() + " was sold");
-            }
-            else{
+            } else {
                 mStock.mProducts.get(productType).increaseInterest(1);
                 mStock.mProducts.get(productType).increasePrice(3);
             }
@@ -96,9 +102,9 @@ public class StockManager {
 
     }
 
-
     /**
      * creates json object from mProducts with fields product name (string) and price (int)
+     *
      * @return json object
      */
     public synchronized JSONObject createJson() {
@@ -116,15 +122,9 @@ public class StockManager {
         return jsonObject;
     }
 
-    public static StockManager getInstance() {
-        if (sStockManager == null) {
-            sStockManager = new StockManager();
-        }
-        return sStockManager;
-    }
-
     /**
      * get stock instance
+     *
      * @return stock instance
      */
     public Stock getStock() {

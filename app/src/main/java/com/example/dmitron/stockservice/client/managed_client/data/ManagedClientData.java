@@ -12,10 +12,6 @@ public class ManagedClientData {
         return mTrader;
     }
 
-    private ManagedClientData(){
-
-    }
-
     public static ManagedClientData getInstance() {
         if (mInstance == null){
             mInstance = new ManagedClientData();
@@ -24,6 +20,9 @@ public class ManagedClientData {
         return mInstance;
     }
 
+    /**
+     * notify listener about data changes
+     */
     public void notifyListener(){
         mListener.onTraderDataUpdate();
     }
@@ -37,7 +36,13 @@ public class ManagedClientData {
         mListener.onTraderDataUpdate();
     }
 
+    /**
+     * implement this to get update data calls
+     */
     public interface UpdateCallback{
+        /**
+         * called when trader data updates
+         */
         void onTraderDataUpdate();
     }
 }

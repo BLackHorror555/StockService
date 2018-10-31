@@ -29,6 +29,9 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
     private ServerManagingLocalData mLocalData;
     private boolean isServiceWorks;
 
+    /**
+     * receive broadcasts from service with client count
+     */
     private BroadcastReceiver mClientCountReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -36,17 +39,14 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
         }
     };
 
+    /**
+     * receive broadcasts from service with product updates
+     */
     private BroadcastReceiver mUpdateProductsReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             try {
                 JSONObject jsonProducts = new JSONObject(intent.getStringExtra(context.getString(R.string.products_extra)));
-                /*Map<ProductType, Integer> products = new HashMap<>();
-
-                for (Iterator<String> it = jsonProducts.keys(); it.hasNext(); ) {
-                    String name = it.next();
-                    products.put(ProductType.valueOf(name), jsonProducts.getInt(name));
-                }*/
                 mLocalData.setProducts(jsonProducts);
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -55,8 +55,7 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
         }
     };
 
-
-    ServerManagingPresenter(@NonNull ServerManagingContract.View view, Context context){
+    ServerManagingPresenter(@NonNull ServerManagingContract.View view, Context context) {
         this.mView = view;
         this.mContext = context;
         mLocalData = ServerManagingLocalData.getInstance();
@@ -76,11 +75,10 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
         }
     }
 
-
     /**
      * Register receivers to receive intents with a new number of clients and new products
      */
-    void registerReceivers(){
+    void registerReceivers() {
         mLocalData.addObserver(this);
 
         IntentFilter filter = new IntentFilter();
@@ -99,15 +97,13 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
             mView.setStopButtonEnabling(true);
 
             restorePreviousSettings();
-
         }
     }
 
-    void unregisterReceivers(){
+    void unregisterReceivers() {
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mClientCountReceiver);
         LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mUpdateProductsReceiver);
     }
-
 
     @Override
     public void start() {
@@ -141,16 +137,14 @@ public class ServerManagingPresenter implements ServerManagingContract.Presenter
         unregisterReceivers();
         SharedPreferences.Editor editor =
                 ActivityUtils.getSharedPrefEditor(mContext, mContext.getString(R.string.preference_file_service_info));
-        //editor.putBoolean(mContext.getString(R.string.saved_is_server_works), isServiceWorks).commit();
         editor.putString(mContext.getString(R.string.saved_products), mLocalData.getProducts().toString()).commit();
     }
 
     @Override
     public void update(Observable o, Object arg) {
-        if ((arg == Changed.CLIENT_COUNT)){
+        if ((arg == Changed.CLIENT_COUNT)) {
             mView.showConnectedClientsCount(mLocalData.getClientsCount());
-        }
-        else{
+        } else {
             try {
                 mView.updateProductsInfo(mLocalData.getProducts());
             } catch (JSONException e) {

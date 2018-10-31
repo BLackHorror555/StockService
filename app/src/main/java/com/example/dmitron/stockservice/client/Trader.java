@@ -8,9 +8,9 @@ import java.util.Map;
 
 public class Trader {
 
-    private final int mId;
-    private static int sLastId = 0;
     private static final int DEFAULT_MONEY = 500;
+    private static int sLastId = 0;
+    private final int mId;
     private int mMoney;
 
     /**
@@ -18,14 +18,14 @@ public class Trader {
      */
     private Map<ProductType, Integer> products;
 
-    public Trader(){
+    public Trader() {
         mId = sLastId++;
         mMoney = DEFAULT_MONEY;
         products = new EnumMap<>(ProductType.class);
         products.put(ProductType.ORANGE, 1);
     }
 
-    Trader(int money){
+    Trader(int money) {
         mId = sLastId++;
         this.mMoney = money;
         products = new EnumMap<>(ProductType.class);
@@ -34,63 +34,67 @@ public class Trader {
 
     /**
      * get unique id of the trader
+     *
      * @return the trader id
      */
-    public int getId(){
+    public int getId() {
         return mId;
     }
 
-
-    void addProduct(ProductType productType){
+    /**
+     * add product to trader
+     * @param productType type of product to add
+     */
+    public void addProduct(ProductType productType) {
         int count = products.containsKey(productType) ? products.get(productType) : 0;
         products.put(productType, ++count);
     }
 
     /**
      * take the product from the trader
+     *
      * @param productType type of product
      * @return success
      */
-    boolean pickupProduct(ProductType productType){
+    public boolean pickupProduct(ProductType productType) {
         int count = products.containsKey(productType) ? products.get(productType) : 0;
-        if (count == 0){
+        if (count == 0) {
             return false;
-        }
-        else {
+        } else {
             products.put(productType, --count);
             return true;
         }
     }
 
-
     /**
      * check if trader has the product
+     *
      * @param productType type of product to check
      * @return has or not
      */
-    boolean isHasProduct(ProductType productType){
+    boolean isHasProduct(ProductType productType) {
         return products.containsKey(productType) && products.get(productType) > 0;
     }
 
-
     /**
      * takes mMoney
+     *
      * @param money the amount of mMoney to take
      */
-    void spendMoney(int money){
+    public void spendMoney(int money) {
         this.mMoney -= money;
     }
 
     /**
      * add mMoney
+     *
      * @param money amount of mMoney to add
      */
-    void increaseMoney(int money){
+    public void increaseMoney(int money) {
         this.mMoney += money;
     }
 
     /**
-     *
      * @return map product type : quantity oF products
      */
     public Map<ProductType, Integer> getProducts() {

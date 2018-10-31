@@ -42,11 +42,10 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
     private Spinner mSpinner;
     private ListView mProductsListView;
 
-
     private ArrayAdapter<String> mSpinnerAdapter;
-
+    private ArrayAdapter<String> mProductsListAdapter;
     private int mLastX = 0;
-    private ArrayAdapter<String> mProductsAdapter;
+
 
     private ServerManagingContract.Presenter mPresenter;
 
@@ -92,15 +91,14 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
      * initialise product list view with adapter
      */
     private void initListView() {
-        mProductsAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1);
-        mProductsListView.setAdapter(mProductsAdapter);
+        mProductsListAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1);
+        mProductsListView.setAdapter(mProductsListAdapter);
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
     }
-
 
     /**
      * initialise mSpinner with adapter and item selected listener
@@ -153,7 +151,6 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
         mSeriesMap = new HashMap<>();
     }
 
-
     /**
      * start background service
      */
@@ -204,7 +201,7 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
 
     @Override
     public void updateProductsInfo(JSONObject products) throws JSONException {
-        mProductsAdapter.clear();
+        mProductsListAdapter.clear();
         for (Iterator<String> it = products.keys(); it.hasNext(); ) {
 
             String product = it.next();
@@ -220,19 +217,19 @@ public class ServerManagingFragment extends Fragment implements View.OnClickList
             mLastX++;
 
             //update products list view
-            mProductsAdapter.add(product + ", price - " + products.get(product));
+            mProductsListAdapter.add(product + ", price - " + products.get(product));
 
         }
     }
 
     @Override
-    public void setStartButtonEnabling(boolean isEnable) {
-        mStartServiceButton.setEnabled(isEnable);
+    public void setStartButtonEnabling(boolean isEnabled) {
+        mStartServiceButton.setEnabled(isEnabled);
     }
 
     @Override
-    public void setStopButtonEnabling(boolean isEnable) {
-        mStopServiceButton.setEnabled(isEnable);
+    public void setStopButtonEnabling(boolean isEnabled) {
+        mStopServiceButton.setEnabled(isEnabled);
     }
 
     @Override

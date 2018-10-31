@@ -4,15 +4,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class ClientBotManager {
+    private static final int DEFAULT_DEALS_COUNT = 15;
+
+    private static ClientBotManager sClientBotManager;
+    private ThreadPoolExecutor mClientsPool;
 
     private ClientBotManager(){
         mClientsPool = (ThreadPoolExecutor) Executors.newCachedThreadPool();
 
     }
-
-    private static ClientBotManager sClientBotManager;
-    private ThreadPoolExecutor mClientsPool;
-
 
     public static ClientBotManager getInstance() {
         if (sClientBotManager == null)
@@ -25,9 +25,8 @@ public class ClientBotManager {
      * @param listener
      */
     public void newClientBot(ClientBot.TraderUpdateCallback listener){
-        mClientsPool.execute(new ClientBot(listener));
+        mClientsPool.execute(new ClientBot(listener, DEFAULT_DEALS_COUNT));
     }
-
 
     /**
      * cancel all client bots

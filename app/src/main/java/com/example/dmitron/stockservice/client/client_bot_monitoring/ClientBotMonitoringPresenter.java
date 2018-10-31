@@ -13,7 +13,7 @@ public class ClientBotMonitoringPresenter implements ClientBotMonitoringContract
     private ClientBotMonitoringContract.View mView;
     private Handler handler;
 
-    ClientBotMonitoringPresenter(ClientBotMonitoringContract.View view, Context context){
+    ClientBotMonitoringPresenter(ClientBotMonitoringContract.View view, Context context) {
         mContext = context;
         mView = view;
         view.setPresenter(this);
@@ -32,33 +32,27 @@ public class ClientBotMonitoringPresenter implements ClientBotMonitoringContract
 
     @Override
     public void clientSelected(String id) {
-        mView.showTraderOnGraph(id);
+        mView.showCertainTraderInfo(id);
     }
-
 
     @Override
     public void onConnected(boolean isSuccess) {
         if (!isSuccess) {
             handler.post(() -> Toast.makeText(mContext, "Failed connection", Toast.LENGTH_SHORT).show());
         }
-
     }
 
     @Override
     public void onTraderUpdate(final Trader trader) {
         handler.post(() -> {
-            mView.showTraderInfo(trader);
+            mView.updateTraderInfo(trader);
         });
-
     }
 
     @Override
     public void onTraderFinish(final Trader trader) {
-
         handler.post(() -> {
             mView.showTraderDisconnected(trader.getId());
-
         });
-
     }
 }

@@ -102,6 +102,9 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
     @Override
     public void onDetach() {
         super.onDetach();
+        mStockProductsAdapter.clear();
+        mTraderProductsAdapter.clear();
+        mPresenter = null;
     }
 
     @Override
@@ -165,6 +168,7 @@ public class ManagedTraderFragment extends Fragment implements View.OnClickListe
 
     @Override
     public void showStockProducts(Map<ProductType, Integer> products) {
+
 
         mStockProductsAdapter.clear();
         if (products == null) return;

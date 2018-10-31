@@ -1,6 +1,8 @@
 package com.example.dmitron.stockservice.client.managed_client;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.example.dmitron.stockservice.R;
 import com.example.dmitron.stockservice.client.Trader;
@@ -9,22 +11,23 @@ import com.example.dmitron.stockservice.server_managing.data.stock.ProductType;
 
 import java.util.Map;
 
+
 public class ManagedClientPresenter implements ManagedClientContract.Presenter, ManagedTraderHelper.ManagedTraderCallback, ManagedClientData.UpdateCallback {
 
+    private static final String TAG = "ManagedClientPresenter";
 
-    ManagedClientData mClientData;
+    private ManagedClientData mClientData;
     private ManagedTraderHelper mManagedTraderHelper;
-
     private ManagedClientContract.View mView;
     private Context mContext;
-
+    private Handler mMainHandler;
 
     ManagedClientPresenter(ManagedClientContract.View view, Context context) {
         mContext = context;
         mView = view;
         mClientData = ManagedClientData.getInstance();
         mClientData.setListener(this);
-
+        mMainHandler = new Handler(Looper.getMainLooper());
         view.setPresenter(this);
     }
 
@@ -37,7 +40,6 @@ public class ManagedClientPresenter implements ManagedClientContract.Presenter, 
         if(mManagedTraderHelper == null) {
             mManagedTraderHelper = new ManagedTraderHelper(this);
         }
-
         if (mClientData.getTrader() == null) {
             mView.showToastMessage(mContext.getString(R.string.trader_does_not_created_msg));
         } else {
@@ -47,29 +49,8 @@ public class ManagedClientPresenter implements ManagedClientContract.Presenter, 
 
     @Override
     public void disconnect() {
-
         mManagedTraderHelper.stopMakingProductRequests();
         mManagedTraderHelper.new FinishConnectionTask().execute();
-    }
-
-
-    @Override
-    public void start() {
-
-    }
-
-    @Override
-    public void onBuyingCompleted(boolean success) {
-        if (!success) {
-            mView.showToastMessage(mContext.getString(R.string.not_enough_money_msg));
-        }
-    }
-
-    @Override
-    public void onSellingCompleted(boolean success) {
-        if (!success) {
-            mView.showToastMessage(mContext.getString(R.string.no_such_product_msg));
-        }
     }
 
     @Override
@@ -87,7 +68,6 @@ public class ManagedClientPresenter implements ManagedClientContract.Presenter, 
 
     @Override
     public void onConnectionFinishTaskComplete() {
-
         mView.setKillTraderButtonEnabled(true);
         mView.setCreateTraderButtonEnabled(true);
         mView.setConnectButtonEnabled(true);
@@ -101,16 +81,17 @@ public class ManagedClientPresenter implements ManagedClientContract.Presenter, 
 
     @Override
     public void onServerDisconnected() {
-        mView.showToastMessage("Server disconnected");
-        mView.setConnectButtonEnabled(true);
-        mView.setDisconnectButtonEnabled(false);
+        mMainHandler.post(() -> {
+            mView.showToastMessage("Server disconnected");
+            mView.setConnectButtonEnabled(true);
+            mView.setDisconnectButtonEnabled(false);
+        });
     }
 
     @Override
     public void createManagedClient() {
         Trader trader = new Trader();
         mClientData.setTrader(trader);
-
     }
 
     @Override
@@ -135,11 +116,17 @@ public class ManagedClientPresenter implements ManagedClientContract.Presenter, 
 
     @Override
     public void onTraderDataUpdate() {
-        if (mClientData.getTrader() == null){
-            mView.cleanTraderInfo();
-            return;
-        }
-        mView.showClientMoney(mClientData.getTrader().getMoney());
-        mView.showClientProducts(mClientData.getTrader().getProducts());
+        mMainHandler.post(() -> {
+            if (mClientData.getTrader() == null){
+                mView.cleanTraderInfo();
+                return;
+            }
+            mView.showClientMoney(mClientData.getTrader().getMoney());
+            mView.showClientProducts(mClientData.getTrader().getProducts());
+        });
+    }
+
+    @Override
+    public void start() {
     }
 }

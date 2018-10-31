@@ -4,70 +4,93 @@ import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.util.Log;
 
-import com.example.dmitron.stockservice.client.Client;
-import com.example.dmitron.stockservice.client.ClientTrading;
+import com.esotericsoftware.kryonet.Client;
+import com.esotericsoftware.kryonet.Connection;
+import com.esotericsoftware.kryonet.Listener;
 import com.example.dmitron.stockservice.client.managed_client.data.ManagedClientData;
 import com.example.dmitron.stockservice.server_managing.data.stock.ProductType;
+import com.example.dmitron.stockservice.server_managing.server.Network;
+import com.example.dmitron.stockservice.server_managing.server.messages.BuyingMessage;
+import com.example.dmitron.stockservice.server_managing.server.messages.ProductMessage;
+import com.example.dmitron.stockservice.server_managing.server.messages.SellingMessage;
+
+import org.json.JSONException;
 
 import java.io.IOException;
 import java.util.Map;
 
+
 public class ManagedTraderHelper {
+
+    private static final String TAG = "ManagedTraderHelper";
     /**
      * number of updates of products from server per second
      */
-    public static final int PRODUCTS_UPDATE_FREQUENCY = 2;
-
-
+    private static final int PRODUCTS_UPDATE_FREQUENCY = 2;
     private ManagedTraderCallback mListener;
-    private ClientTrading mClientTrading;
     private Client mClient;
     private Handler mHandler;
     private Handler mMainHandler = new Handler(Looper.getMainLooper());
 
-    /**
-     * make repetitive requests to server
-     */
-    private Runnable mRunProductRequest = new Runnable() {
-        @Override
-        public void run() {
-
-            final Map<ProductType, Integer> productsMap;
-
-            productsMap = requestProduct();
-            if (productsMap == null) {
-                mMainHandler.post(() -> mListener.onServerDisconnected());
-                return;
-            }
-            mMainHandler.post(() -> mListener.onProductsRequestComplete(productsMap));
-            mHandler.postDelayed(this, 1000 / PRODUCTS_UPDATE_FREQUENCY);
-        }
-    };
-
-
-    public ManagedTraderHelper(ManagedTraderCallback listener) {
+    ManagedTraderHelper(ManagedTraderCallback listener) {
         this.mListener = listener;
     }
 
     /**
      * start making product requests to server
      */
-    public void startMakingProductRequests() {
+    void startMakingProductRequests() {
+
         HandlerThread mHandlerThread = new HandlerThread("RequestThread");
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());
-        mHandler.post(mRunProductRequest);
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                ProductMessage productMessage = new ProductMessage();
+                synchronized (mClient) {
+                    mClient.sendTCP(productMessage);
+                }
+                mHandler.postDelayed(this, 1000 / PRODUCTS_UPDATE_FREQUENCY);
+            }
+        });
     }
 
-    private Map<ProductType, Integer> requestProduct() {
-        synchronized (mClientTrading) {
-            return mClientTrading.getMapProductsFromServer();
-        }
-    }
-
-    public void stopMakingProductRequests() {
+    /**
+     * stop make products requests to server
+     */
+    void stopMakingProductRequests() {
         mHandler.removeCallbacksAndMessages(null);
+    }
+
+    /**
+     * implement this to receive callbacks about completed tasks
+     */
+    public interface ManagedTraderCallback {
+
+        /**
+         * called when connection async task completed
+         * @param success is connection success
+         */
+        void onConnectionTaskComplete(boolean success);
+
+        /**
+         * called when finish connection async task completed
+         */
+        void onConnectionFinishTaskComplete();
+
+        /**
+         * called when product request to server completed
+         * @param products products received from server
+         */
+        void onProductsRequestComplete(Map<ProductType, Integer> products);
+
+        /**
+         * called when server itself terminate the connection
+         */
+        void onServerDisconnected();
     }
 
     /**
@@ -79,10 +102,49 @@ public class ManagedTraderHelper {
         protected Boolean doInBackground(Void... voids) {
 
             try {
-
                 mClient = new Client();
-                mClient.connectToServer();
-                mClientTrading = new ClientTrading(mClient);
+                mClient.start();
+                mClient.connect(5000, Network.ADDRESS, Network.SERVER_PORT);
+
+                Network.register(mClient);
+
+                mClient.addListener(new Listener.ThreadedListener(new Listener() {
+                    @Override
+                    public void received(Connection connection, Object object) {
+
+                        if (object instanceof ProductMessage) {
+                            ProductMessage productMessage = (ProductMessage) object;
+                            mMainHandler.post(() -> {
+                                try {
+                                    mListener.onProductsRequestComplete(productMessage.getMapProducts());
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                            });
+                        }
+                        if (object instanceof SellingMessage) {
+                            SellingMessage sellingMessage = (SellingMessage) object;
+                            ManagedClientData.getInstance().getTrader().pickupProduct(sellingMessage.getProductType());
+                            ManagedClientData.getInstance().getTrader().increaseMoney(sellingMessage.getPrice());
+                            ManagedClientData.getInstance().notifyListener();
+                            Log.i(TAG, "received: Product has sold");
+
+                        } else if (object instanceof BuyingMessage) {
+                            BuyingMessage buyingMessage = (BuyingMessage) object;
+                            if (buyingMessage.isSuccess()) {
+                                ManagedClientData.getInstance().getTrader().addProduct(buyingMessage.getProductType());
+                                ManagedClientData.getInstance().getTrader().spendMoney(buyingMessage.getPrice());
+                                ManagedClientData.getInstance().notifyListener();
+                                Log.i(TAG, "received: Product was bought");
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void disconnected(Connection connection) {
+                        mListener.onServerDisconnected();
+                    }
+                }));
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -99,31 +161,11 @@ public class ManagedTraderHelper {
 
 
     }
-    /**
-     * makes the request to the server and return products in json
-     */
-    public class ProductsRequestTask extends AsyncTask<Void, Void, Map<ProductType, Integer>> {
 
-        @Override
-        protected Map<ProductType, Integer> doInBackground(Void... voids) {
-            synchronized (mClientTrading) {
-                return mClientTrading.getMapProductsFromServer();
-
-            }
-        }
-
-        @Override
-        protected void onPostExecute(Map<ProductType, Integer> products) {
-            if (products == null) mListener.onServerDisconnected();
-            mListener.onProductsRequestComplete(products);
-        }
-
-
-    }
     /**
      * do buying request to server in asynchronous way
      */
-    public class BuyingTask extends AsyncTask<Void, Void, Boolean> {
+    public class BuyingTask extends AsyncTask<Void, Void, Void> {
 
 
         ProductType productType;
@@ -133,25 +175,20 @@ public class ManagedTraderHelper {
         }
 
         @Override
-        protected Boolean doInBackground(Void... voids) {
-            boolean returnValue;
-            synchronized (mClientTrading) {
-                returnValue = mClientTrading.buyProduct(ManagedClientData.getInstance().getTrader(), productType);
+        protected Void doInBackground(Void... voids) {
+
+            BuyingMessage buyingMessage = new BuyingMessage();
+            buyingMessage.setProductType(productType);
+            buyingMessage.setPrice(ManagedClientData.getInstance().getTrader().getMoney());
+
+            synchronized (mClient) {
+                mClient.sendTCP(buyingMessage);
             }
-
-            return returnValue;
+            return null;
         }
-
-        @Override
-        protected void onPostExecute(Boolean success) {
-            if (success) {
-                ManagedClientData.getInstance().notifyListener();
-            }
-            mListener.onBuyingCompleted(success);
-        }
-
 
     }
+
     /**
      * do selling request to server in asynchronous way
      */
@@ -167,42 +204,29 @@ public class ManagedTraderHelper {
         @Override
         protected Boolean doInBackground(Void... voids) {
 
-            synchronized (mClientTrading) {
-                return mClientTrading.sellProduct(ManagedClientData.getInstance().getTrader(), productType);
-            }
+            SellingMessage sellingMessage = new SellingMessage();
+            sellingMessage.setProductType(productType);
 
-        }
-
-        @Override
-        protected void onPostExecute(Boolean success) {
-            if (success) {
-                ManagedClientData.getInstance().notifyListener();
+            synchronized (mClient) {
+                mClient.sendTCP(sellingMessage);
             }
-            mListener.onSellingCompleted(success);
+            return null;
         }
 
 
     }
-    /**
-     * notify server about finishing connection in asynchronous way
-     */
+
     public class FinishConnectionTask extends AsyncTask<Void, Void, Boolean> {
+
 
         @Override
         protected Boolean doInBackground(Void... voids) {
 
-            try {
 
-                synchronized (mClientTrading) {
-                    mClientTrading.finishConnection();
-                    mClient.closeConnection();
-                    return true;
-                }
+            mClient.stop();
+            mClient.close();
+            return true;
 
-            } catch (IOException e) {
-                e.printStackTrace();
-                return false;
-            }
         }
 
         @Override
@@ -215,25 +239,7 @@ public class ManagedTraderHelper {
 
     }
 
-    /**
-     * implement this to receive callbacks about completed tasks
-     */
-    public interface ManagedTraderCallback {
-        void onBuyingCompleted(boolean success);
-
-        void onSellingCompleted(boolean success);
-
-        void onConnectionTaskComplete(boolean success);
-
-        void onConnectionFinishTaskComplete();
-
-        void onProductsRequestComplete(Map<ProductType, Integer> products);
-
-        void onServerDisconnected();
-    }
-
 }
-
 
 
 

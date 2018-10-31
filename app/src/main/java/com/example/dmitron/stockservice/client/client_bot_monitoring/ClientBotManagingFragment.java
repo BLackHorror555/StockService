@@ -12,8 +12,8 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.Spinner;
-import android.widget.TextView;
 
 import com.example.dmitron.stockservice.R;
 import com.example.dmitron.stockservice.client.Trader;
@@ -29,18 +29,22 @@ import java.util.Map;
 
 public class ClientBotManagingFragment extends Fragment implements View.OnClickListener, ClientBotMonitoringContract.View {
 
-    private GraphView mMoneyGraph;
+    private ClientBotMonitoringContract.Presenter mPresenter;
+    /**
+     * map with traders - id : graph series with money
+     */
     private HashMap<String, LineGraphSeries<DataPoint>> mMoneySeriesMap;
+    private ArrayAdapter<String> mSelectTraderAdapter;
+
     private int mLastX = 0;
 
-    private ClientBotMonitoringContract.Presenter mPresenter;
-
     //UI
+    private ListView mProductsListView;
+    private ArrayAdapter<String> mProductsListViewAdapter;
+    private HashMap<Integer, Map<ProductType, Integer>> mTradersProducts;
+    private GraphView mMoneyGraph;
     private Button mNewClientButton;
     private Spinner mSpinner;
-    private ArrayAdapter<String> mSelectTraderAdapter;
-    private TextView mProductsView;
-
 
     @Override
     public void onAttach(Context context) {
@@ -48,22 +52,29 @@ public class ClientBotManagingFragment extends Fragment implements View.OnClickL
         new ClientBotMonitoringPresenter(this, context);
     }
 
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_client_bot_monitoring, container, false);
-
         mNewClientButton = v.findViewById(R.id.new_client_btn);
         mMoneyGraph = v.findViewById(R.id.client_money_graph);
         mSpinner = v.findViewById(R.id.client_spinner);
-        mProductsView = v.findViewById(R.id.products_view);
-
+        mProductsListView = v.findViewById(R.id.bot_products_list_view);
         mNewClientButton.setOnClickListener(this);
-
         createGraphs();
         initSpinner();
+        initListView();
+        mTradersProducts = new HashMap<>();
+
         return v;
+    }
+
+    /**
+     * initialise list view and its adapter
+     */
+    private void initListView() {
+        mProductsListViewAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1);
+        mProductsListView.setAdapter(mProductsListViewAdapter);
     }
 
     /**
@@ -73,17 +84,13 @@ public class ClientBotManagingFragment extends Fragment implements View.OnClickL
         mSelectTraderAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item);
         mSelectTraderAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mSpinner.setAdapter(mSelectTraderAdapter);
-
         mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 
                 String traderId = ((String) parent.getItemAtPosition(position)).split(" ")[1];
                 mPresenter.clientSelected(traderId);
-
-
             }
-
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
 
@@ -99,19 +106,15 @@ public class ClientBotManagingFragment extends Fragment implements View.OnClickL
      * @param money trader money
      */
     private void updateMoneyGraph(String id, int money) {
-
         //add client if he is not
         if (!mMoneySeriesMap.containsKey(id)) {
-
             mMoneySeriesMap.put(id, GraphHelper.newLineGraphSeries("Trader" + id));
             mSelectTraderAdapter.add("Trader " + id);
         }
-
         DataPoint dataPoint = new DataPoint(mLastX, money);
         mMoneySeriesMap.get(id).appendData(dataPoint, true, 20);
         mLastX++;
     }
-
 
     @Override
     public void onDetach() {
@@ -123,7 +126,7 @@ public class ClientBotManagingFragment extends Fragment implements View.OnClickL
      */
     private void createGraphs() {
         mMoneyGraph.getViewport().setXAxisBoundsManual(true);
-        //mMoneyGraph.getViewport().setMinX(0);
+//        mMoneyGraph.getViewport().setMinX(0);
         mMoneyGraph.getViewport().setMaxX(40);
         mMoneyGraph.getViewport().setMinY(0);
 
@@ -146,7 +149,6 @@ public class ClientBotManagingFragment extends Fragment implements View.OnClickL
 
     }
 
-
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
@@ -162,12 +164,17 @@ public class ClientBotManagingFragment extends Fragment implements View.OnClickL
     }
 
     @Override
-    public void showTraderInfo(Trader trader) {
+    public void updateTraderInfo(Trader trader) {
         updateMoneyGraph(Integer.toString(trader.getId()), trader.getMoney());
-        Map<ProductType, Integer> products = trader.getProducts();
-        mProductsView.setText("");
-        for (ProductType productType : products.keySet()) {
-            mProductsView.append(productType.name() + " - " + products.get(productType) + "\n");
+        mTradersProducts.put(trader.getId(), trader.getProducts());
+
+        //update list view if trader is current
+        if (!mProductsListViewAdapter.isEmpty()
+                && Integer.valueOf(((String)mSpinner.getSelectedItem()).split(" ")[1]) == trader.getId()){
+            mProductsListViewAdapter.clear();
+            for (ProductType productType : mTradersProducts.get(trader.getId()).keySet()) {
+                mProductsListViewAdapter.add(productType.name() + " - " + mTradersProducts.get(trader.getId()).get(productType));
+            }
         }
     }
 
@@ -178,9 +185,15 @@ public class ClientBotManagingFragment extends Fragment implements View.OnClickL
     }
 
     @Override
-    public void showTraderOnGraph(String traderId) {
+    public void showCertainTraderInfo(String traderId) {
+        int id = Integer.valueOf(traderId);
         mMoneyGraph.removeAllSeries();
-        if (mMoneySeriesMap.containsKey(traderId))
+        if (mMoneySeriesMap.containsKey(traderId)) {
             mMoneyGraph.addSeries(mMoneySeriesMap.get(traderId));
+        }
+        mProductsListViewAdapter.clear();
+        for (ProductType productType : mTradersProducts.get(id).keySet()) {
+            mProductsListViewAdapter.add(productType.name() + " - " + mTradersProducts.get(id).get(productType));
+        }
     }
 }
